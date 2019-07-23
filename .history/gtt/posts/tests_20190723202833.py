@@ -1,8 +1,7 @@
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
 from .models import (
-    Tag, Post, Comment, Reply, Rating, Bookmark, Archive
-    )
+    Tag, Post, Comment, Reply, Rating, Bookmark, Archive)
 
 User = get_user_model()
 
@@ -57,6 +56,17 @@ class PostModelTest(TestCase):
         self.assertNotEquals(post1.post_heading,"Adam West")
 
     def test_comment_model(self):
+        article = """Adam West was born William West Anderson on September 19, 1928, 
+        in Walla Walla, Washington. His father, Otto Anderson (1903–1984) was a farmer; 
+        and his mother, Audrey Volenne (née Speer; 1906–1969) was an opera singer and concert pianist who left her Hollywood dreams to care for her family.
+        Following her example, West told his father as a young man that he intended to go to Hollywood after completing school. 
+        He moved to Seattle with his mother when he was 15, following his parents' divorce. 
+        West attended Walla Walla High School during his freshman and sophomore years, and later enrolled in Lakeside School in Seattle.
+        He attended Whitman College but studied at University of Puget Sound during the fall semester of 1949. 
+        He graduated with a bachelor's degree in literature and a minor in psychology from Whitman College in Walla Walla, 
+        where he was a member of the Gamma Zeta Chapter of the Beta Theta Pi fraternity. He also participated on the speech and debate team. 
+        Drafted into the United States Army, he served as an announcer on American Forces Network television. 
+        After his discharge, he worked as a milkman before moving to Hawaii to pursue a career in television."""
         tag = Tag.objects.create(tag_name="UX")
         user1 = User(first_name="John", last_name="Doe", email="johndoe@mail.com", username="johndoe")
         user1.save()
@@ -81,13 +91,9 @@ class PostModelTest(TestCase):
         user2.delete()
         tag.delete()
         self.assertNotEquals(comment.comment, "He was also Batman/Bruce Wayne in the '70s.")
-
     def test_reply_model(self):
-        pass
 
     def test_bookmark_model(self):
-        pass
 
-    def test_archive_model(self):
-        pass
+    def test_archive_model()
 

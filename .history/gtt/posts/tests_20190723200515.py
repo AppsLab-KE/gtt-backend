@@ -1,12 +1,11 @@
 from django.test import TestCase, Client
-from django.contrib.auth import get_user_model
 from .models import (
-    Tag, Post, Comment, Reply, Rating, Bookmark, Archive
-    )
+    Tag, Post, Comment, Reply, Rating, Bookmark, Archive)
 
-User = get_user_model()
+class PostTest(TestCase):
+    #def setUp(self):
 
-class PostModelTest(TestCase):
+    #def tearDown(self):
 
     def test_tag_model(self):
         Tag.objects.create(tag_name="UX")
@@ -36,58 +35,22 @@ class PostModelTest(TestCase):
         where he was a member of the Gamma Zeta Chapter of the Beta Theta Pi fraternity. He also participated on the speech and debate team. 
         Drafted into the United States Army, he served as an announcer on American Forces Network television. 
         After his discharge, he worked as a milkman before moving to Hawaii to pursue a career in television."""
-        tag = Tag.objects.create(tag_name="UX")
-        user = User(first_name="John", last_name="Doe", email="johndoe@mail.com", username="johndoe")
-        user.save()
-        post = Post(
+        Tag.objects.create(tag_name="UX")
+        Post(
             post_heading="Adam West",
             post_body=article,
         )
-        post.post_author = user
-        post.save()
-        post.tags.add(tag)
-        post1 = Post.objects.get(post_heading="Adam West")
-        posts = Post.objects.all()
-        self.assertEquals(post1.post_heading,"Adam West")
-        print(post1.get_absolute_url())
-        print(posts)
-        post1.delete()
-        tag.delete()
-        user.delete()
-        self.assertNotEquals(post1.post_heading,"Adam West")
 
-    def test_comment_model(self):
-        tag = Tag.objects.create(tag_name="UX")
-        user1 = User(first_name="John", last_name="Doe", email="johndoe@mail.com", username="johndoe")
-        user1.save()
-        user2 = User(first_name="Jane", last_name="Doe", email="janedoe@mail.com", username="janedoe")
-        user2.save()
-        post = Post(
-            post_heading="Adam West",
-            post_body=article,
-        )
-        post.post_author = user1
-        post.save()
-        post.tags.add(tag)
-        post1 = Post.objects.get(post_heading="Adam West")
-        comment = Comment.objects.create(commented_post=post1, user_that_commented=user2, comment="He was also Batman/Bruce Wayne in the '70s.")
-        comments = Comment.objects.all()
-        self.assertEquals(comment.comment, "He was also Batman/Bruce Wayne in the '70s.")
-        print(comment.get_absolute_url())
-        print(comments)
-        comment.delete()
-        post1.delete()
-        user1.delete()
-        user2.delete()
-        tag.delete()
-        self.assertNotEquals(comment.comment, "He was also Batman/Bruce Wayne in the '70s.")
-
-    def test_reply_model(self):
-        pass
-
-    def test_bookmark_model(self):
-        pass
-
-    def test_archive_model(self):
-        pass
+        tag1 = tag.objects.get(tag_name="UX")
+        tag2 = tag.objects.get(tag_name="UI")
+        tags = Tag.objects.all()
+        self.assertEquals(tag1.tag_name, "UX")
+        self.assertEquals(tag2.tag_name, "UI")
+        print(tag1.get_absolute_url())
+        print(tag2.get_absolute_url())
+        print(tags)
+        tag1.delete()
+        tag2.delete()
+        self.assertNotEquals(tag1.tag_name, "UX")
+        self.assertNotEquals(tag2.tag_name, "UI")
 

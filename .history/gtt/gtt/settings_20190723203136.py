@@ -37,8 +37,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',
-    'rest_framework.authtoken',
     'oauth2_provider',
     'social_django',
     'rest_framework_social_oauth2',
@@ -99,24 +97,6 @@ REST_FRAMEWORK = {
     ),
 }
 
-AUTHENTICATION_BACKENDS = (
-    'social_core.backends.github.GithubOAuth2',
-    'social_core.backends.bitbucket.BitbucketOAuth2',
-    'social_core.backends.gitlab.GitLabOAuth2',
-    'rest_framework_social_oauth2.backends.DjangoOAuth2',
-    'django.contrib.auth.backends.ModelBackend',
-)
-
-# Github configuration
-SOCIAL_AUTH_GITHUB_KEY = '523194ecad2a214413b7'
-SOCIAL_AUTH_GITHUB_SECRET = '70f7fb6822e8f2322eac483e2e5e659b6027f6ce'
-
-SOCIAL_AUTH_BITBUCKET_OAUTH2_KEY = '<your-consumer-key>'
-SOCIAL_AUTH_BITBUCKET_OAUTH2_SECRET = '<your-consumer-secret>'
-
-SOCIAL_AUTH_GITLAB_KEY = ''
-SOCIAL_AUTH_GITLAB_SECRET = ''
-
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
 
@@ -160,9 +140,3 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 MEDIA_URL = '/media/'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-API_ROOT = 'api'
-
-API_VERSION = 'v1'
-
-API = API_ROOT + "/" + API_VERSION + "/"

@@ -1,8 +1,7 @@
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
 from .models import (
-    Tag, Post, Comment, Reply, Rating, Bookmark, Archive
-    )
+    Tag, Post, Comment, Reply, Rating, Bookmark, Archive)
 
 User = get_user_model()
 
@@ -83,11 +82,8 @@ class PostModelTest(TestCase):
         self.assertNotEquals(comment.comment, "He was also Batman/Bruce Wayne in the '70s.")
 
     def test_reply_model(self):
-        pass
 
     def test_bookmark_model(self):
-        pass
 
-    def test_archive_model(self):
-        pass
+    def test_archive_model()
 

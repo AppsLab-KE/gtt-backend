@@ -107,9 +107,8 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
 
-# Github configuration
-SOCIAL_AUTH_GITHUB_KEY = '523194ecad2a214413b7'
-SOCIAL_AUTH_GITHUB_SECRET = '70f7fb6822e8f2322eac483e2e5e659b6027f6ce'
+SOCIAL_AUTH_GITHUB_KEY = 'a1b2c3d4'
+SOCIAL_AUTH_GITHUB_SECRET = 'e5f6g7h8i9'
 
 SOCIAL_AUTH_BITBUCKET_OAUTH2_KEY = '<your-consumer-key>'
 SOCIAL_AUTH_BITBUCKET_OAUTH2_SECRET = '<your-consumer-secret>'

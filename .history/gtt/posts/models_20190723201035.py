@@ -52,7 +52,6 @@ class Rating(models.Model):
 class Bookmark(models.Model):
     user_that_bookmarked = models.ForeignKey("User", nullable=True, on_delete=models.SET_NULL)
     bookmarked_post = models.ForeignKey("Post", nullable=True, on_delete=models.SET_NULL)
-    date_bookmarked = models.DateTimeField(auto_now_add=True)
 
     def get_absolute_url(self):
         from django.urls import reverse
@@ -61,7 +60,6 @@ class Bookmark(models.Model):
 class Archive(models.Model):
     user_that_archived = models.ForeignKey("User", nullable=True, on_delete=models.SET_NULL)
     archived_post = models.ForeignKey("Post", nullable=True, on_delete=models.SET_NULL)
-    date_archived = models.DateTimeField(auto_now_add=True)
 
     def get_absolute_url(self):
         from django.urls import reverse
