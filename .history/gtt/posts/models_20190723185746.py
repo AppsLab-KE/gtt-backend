@@ -1,0 +1,30 @@
+from django.db import models
+
+class Tag(models.Model):
+    tag_name = models.CharField(max_length=50)
+    date_added = models.DateTimeField(auto_now_add=True)
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('view_tag', kwargs={'pk': self.pk})
+
+class Post(models.Model):
+    post_heading = models.CharField(max_length=100)
+    post_body = models.TextField()
+    post_author = models.ForeignKey("User", nullable=True, on_delete=models.SET_NULL)
+    post_tag = models.ManyToManyField("Tag", related_name="posts")
+    date_published = models.DateTimeField(auto_now_add=True)
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('view_post', kwargs={'pk': self.pk})
+
+class Rating(models.Model):
+    rated_post = models.ForeignKey("Post", nullable=True, on_delete=models.SET_NULL)
+    user_that_rated = models.ForeignKey("User", nullable=True, on_delete=models.SET_NULL)
+    rating = models.BooleanField(default=False)
+    date_rated = models.DateTimeField(auto_now_add=True)
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('view_rating', kwargs={'pk': self.pk})
