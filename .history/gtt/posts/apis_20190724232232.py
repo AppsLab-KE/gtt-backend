@@ -326,20 +326,9 @@ class ViewBookmarks(APIView):
                 ]
             post_dict = model_to_dict(bookmark.bookmarked_post, fields=fields)
             reply = {
-                'resource_token': bookmark.resource_key,
-                'bookmarked_post': {
-                    'slug': post_dict['slug'],
-                    'post_heading': post_dict['post_heading'],
-                    'post_author': {
-                        'first_name': post_dict['first_name'],
-                        'last_name': post_dict['last_name'],
-                        'username': post_dict['username'],
-                        'email': post_dict['email'],
-                        'profile__avatar': post_dict['profile__avatar'],
-                    },
-                    'date_published': post_dict['date_published'],
-                },
-                'date_bookmarked': bookmark.date_bookmarked,
+                "resource_token": bookmark.resource_key,
+                "bookmarked_post": ,
+                "date_bookmarked": bookmark.date_bookmarked,
             }
             response_list.append(reply)
         return Response(response_list)
