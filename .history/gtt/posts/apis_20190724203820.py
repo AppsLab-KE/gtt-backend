@@ -41,7 +41,7 @@ class ViewRatedPosts(APIView):
             limit = request.data.get('limit')
             user_rated_posts = Post.objects.filter(user_that_rated__pk=user.id, rating__rating=True)[offset:offset+limit]
         else:
-            user_rated_posts = Post.objects.filter(user_that_rated__pk=user.id, rating__rating=True)
+            user_rated_posts = Post.objects.filter(user_that_rated__pk=user.id, rating__rating=True)[offset:offset+limit]
         response_list = list()
         for user_rated_post in user_rated_posts:
             user_post = {
@@ -132,12 +132,9 @@ class RatePost(APIView):
 
 class ViewComments(APIView):
     def get(self, request, slug):
-        if 'offset' in request.data and 'limit' in request.data:
-            offset = request.data.get('offset')
-            limit = request.data.get('limit')
-            comments = Comment.objects.filter(commented_post__slug=slug)[offset:offset+limit]
-        else:
-            comments = Comment.objects.filter(commented_post__slug=slug)
+        offset = request.data.get('offset')
+        limit = request.data.get('limit')
+        comments = Comment.objects.filter(commented_post__slug=slug)[offset:offset+limit]
         response_list = list()
         for comment in comments:
             comment = {
@@ -197,12 +194,9 @@ class DeleteComment(APIView):
 
 class ViewReplies(APIView):
     def get(self, request, resource_key):
-        if 'offset' in request.data and 'limit' in request.data:
-            offset = request.data.get('offset')
-            limit = request.data.get('limit')
-            replies = Reply.objects.filter(replied_comment__resource_key=resource_key)[offset:offset+limit]
-        else:
-            replies = Reply.objects.filter(replied_comment__resource_key=resource_key)
+        offset = request.data.get('offset')
+        limit = request.data.get('limit')
+        replies = Reply.objects.filter(replied_comment__resource_key=resource_key)[offset:offset+limit]
         response_list = list()
         for reply in replies:
             reply = {
@@ -260,13 +254,10 @@ class DeleteReply(APIView):
 
 class ViewBookmarks(APIView):
     def get(self, request):
+        offset = request.data.get('offset')
+        limit = request.data.get('limit')
         user = User.objects.get(email=request.user)
-        if 'offset' in request.data and 'limit' in request.data:
-            offset = request.data.get('offset')
-            limit = request.data.get('limit')
-            bookmarks = Bookmark.objects.filter(user_that_bookmarked__pk=user.id)[offset:offset+limit]
-        else:
-            bookmarks = Bookmark.objects.filter(user_that_bookmarked__pk=user.id)
+        bookmarks = Bookmark.objects.filter(user_that_bookmarked__pk=user.id)[offset:offset+limit]
         response_list = list()
         for bookmark in bookmarks:
             reply = {

@@ -41,7 +41,7 @@ class ViewRatedPosts(APIView):
             limit = request.data.get('limit')
             user_rated_posts = Post.objects.filter(user_that_rated__pk=user.id, rating__rating=True)[offset:offset+limit]
         else:
-            user_rated_posts = Post.objects.filter(user_that_rated__pk=user.id, rating__rating=True)
+            user_rated_posts = Post.objects.filter(user_that_rated__pk=user.id, rating__rating=True)[offset:offset+limit]
         response_list = list()
         for user_rated_post in user_rated_posts:
             user_post = {
