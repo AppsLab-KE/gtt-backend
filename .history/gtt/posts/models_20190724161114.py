@@ -1,8 +1,6 @@
 import string
 import secrets
 from django.db import models
-from django.http import Http404
-from django.utils.text import slugify
 from django.shortcuts import get_object_or_404
 
 def get_random_token(length):
@@ -23,20 +21,9 @@ def get_resource_key(model):
         try:
             get_object_or_404(model, resource_key=token)
             continue
-        except Http404:
+        except:
             break
     return token
-
-def get_slug_key(slug):
-    slug_token = str()
-    while True:
-        slug_token = slug + "-" + get_random_token(20)
-        try:
-            Post.objects.get(slug=slug_token)
-            continue
-        except Post.DoesNotExist:
-            break
-    return slug_token
     
 class Tag(models.Model):
     tag_name = models.CharField(max_length=50)
@@ -45,7 +32,7 @@ class Tag(models.Model):
 
     def get_absolute_url(self):
         from django.urls import reverse
-        return reverse('view_tag', kwargs={'resource_key': self.resource_key})
+        return reverse('view_tag', kwargs={'pk': self.pk})
     
     def save(self, *args, **kwargs):
         self.resource_key = get_resource_key(Tag)
@@ -66,7 +53,6 @@ class Post(models.Model):
 
     def save(self, *args, **kwargs):
         self.resource_key = get_resource_key(Post)
-        self.slug = get_slug_key(slugify(self.post_heading))
         super(Post, self).save(*args, **kwargs)
 
 class Comment(models.Model):
@@ -78,7 +64,7 @@ class Comment(models.Model):
 
     def get_absolute_url(self):
         from django.urls import reverse
-        return reverse('view_comment', kwargs={'resource_key': self.resource_key})
+        return reverse('view_comment', kwargs={'pk': self.pk})
 
     def save(self, *args, **kwargs):
         self.resource_key = get_resource_key(Comment)
@@ -93,7 +79,7 @@ class Reply(models.Model):
 
     def get_absolute_url(self):
         from django.urls import reverse
-        return reverse('view_reply', kwargs={'resource_key': self.resource_key})
+        return reverse('view_reply', kwargs={'pk': self.pk})
 
     def save(self, *args, **kwargs):
         self.resource_key = get_resource_key(Reply)
@@ -108,7 +94,7 @@ class Rating(models.Model):
 
     def get_absolute_url(self):
         from django.urls import reverse
-        return reverse('view_rating', kwargs={'resource_key': self.resource_key})
+        return reverse('view_rating', kwargs={'pk': self.pk})
 
     def save(self, *args, **kwargs):
         self.resource_key = get_resource_key(Rating)
@@ -122,7 +108,7 @@ class Bookmark(models.Model):
 
     def get_absolute_url(self):
         from django.urls import reverse
-        return reverse('view_bookmark', kwargs={'resource_key': self.resource_key})
+        return reverse('view_bookmark', kwargs={'pk': self.pk})
 
     def save(self, *args, **kwargs):
         self.resource_key = get_resource_key(Bookmark)
@@ -136,7 +122,7 @@ class Archive(models.Model):
 
     def get_absolute_url(self):
         from django.urls import reverse
-        return reverse('view_archive', kwargs={'resource_key': self.resource_key})
+        return reverse('view_archive', kwargs={'pk': self.pk})
     
     def save(self, *args, **kwargs):
         self.resource_key = get_resource_key(Archive)

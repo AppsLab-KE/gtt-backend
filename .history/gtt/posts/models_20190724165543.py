@@ -2,7 +2,6 @@ import string
 import secrets
 from django.db import models
 from django.http import Http404
-from django.utils.text import slugify
 from django.shortcuts import get_object_or_404
 
 def get_random_token(length):
@@ -28,13 +27,13 @@ def get_resource_key(model):
     return token
 
 def get_slug_key(slug):
-    slug_token = str()
+    token = str()
     while True:
         slug_token = slug + "-" + get_random_token(20)
         try:
             Post.objects.get(slug=slug_token)
             continue
-        except Post.DoesNotExist:
+        except Post.DoesNotExis:
             break
     return slug_token
     
@@ -66,7 +65,6 @@ class Post(models.Model):
 
     def save(self, *args, **kwargs):
         self.resource_key = get_resource_key(Post)
-        self.slug = get_slug_key(slugify(self.post_heading))
         super(Post, self).save(*args, **kwargs)
 
 class Comment(models.Model):
