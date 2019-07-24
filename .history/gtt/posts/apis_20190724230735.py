@@ -30,7 +30,7 @@ class ViewPost(APIView):
             })
         except Post.DoesNotExist:
             return Response({
-                "message": "That post was not found.",
+                "message": "Post was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
 class ViewRatedPosts(APIView):
@@ -80,7 +80,7 @@ class ViewTagPosts(APIView):
             return Response(response_list)
         except Tag.DoesNotExist:
             return Response({
-                "message": "That tag was not found.",
+                "message": "This tag was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
 class ViewRecommendedPosts(APIView):
@@ -131,7 +131,7 @@ class UpdatePost(APIView):
             })
         except Post.DoesNotExist:
             return Response({
-                "message": "That post was not found.",
+                "message": "Post was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
             
 class DeletePost(APIView):
@@ -145,7 +145,7 @@ class DeletePost(APIView):
             })
         except Post.DoesNotExist:
             return Response({
-                "message": "That post was not found.",
+                "message": "Post was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
 class RatePost(APIView):
@@ -172,7 +172,7 @@ class RatePost(APIView):
             }, status=status.HTTP_404_NOT_FOUND)
         except Post.DoesNotExist:
             return Response({
-                "message": "That post was not found.",
+                "message": "Post was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
 class ViewComments(APIView):
@@ -207,7 +207,7 @@ class CreateComment(APIView):
             })
         except Post.DoesNotExist:
             return Response({
-                "message": "That post was not found.",
+                "message": "Post was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
 class UpdateComment(APIView):

@@ -57,7 +57,7 @@ class Tag(models.Model):
     
     def save(self, *args, **kwargs):
         self.resource_key = get_resource_key(Tag)
-        self.slug = slugify(self.tag_name)
+        self.slug = slugify(self.post_heading)
         super(Tag, self).save(*args, **kwargs)
 
 class Post(models.Model):
