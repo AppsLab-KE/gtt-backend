@@ -38,17 +38,15 @@ def get_slug_key(slug):
             break
     return slug_token
 
-class ArchivedManager(models.Manager):
+class ViewableManager(models.Manager):
     def get_queryset(self):
-        return super().get_queryset().filter(archived=False)
+        return super().get_queryset().filter(viewable=True)
 
 
 class Tag(models.Model):
     tag_name = models.CharField(max_length=50)
     resource_key = models.CharField(max_length=50, unique=True)
-    archived = models.BooleanField(default=False)
     date_added = models.DateTimeField(auto_now_add=True)
-    objects = ArchivedManager()
 
     def get_absolute_url(self):
         from django.urls import reverse
@@ -65,9 +63,7 @@ class Post(models.Model):
     slug = models.SlugField()
     tags = models.ManyToManyField("Tag", related_name="tags")
     resource_key = models.CharField(max_length=50, unique=True)
-    archived = models.BooleanField(default=False)
     date_published = models.DateTimeField(auto_now_add=True)
-    objects = ArchivedManager()
 
     def get_absolute_url(self):
         from django.urls import reverse
@@ -83,9 +79,7 @@ class Comment(models.Model):
     user_that_commented = models.ForeignKey("User", nullable=True, on_delete=models.SET_NULL)
     comment = models.TextField()
     resource_key = models.CharField(max_length=50, unique=True)
-    archived = models.BooleanField(default=False)
     date_commented = models.DateTimeField(auto_now_add=True)
-    objects = ArchivedManager()
 
     def get_absolute_url(self):
         from django.urls import reverse
@@ -100,9 +94,7 @@ class Reply(models.Model):
     user_that_replied = models.ForeignKey("User", nullable=True, on_delete=models.SET_NULL)
     reply = models.TextField()
     resource_key = models.CharField(max_length=50, unique=True)
-    archived = models.BooleanField(default=False)
     date_replied = models.DateTimeField(auto_now_add=True)
-    objects = ArchivedManager()
 
     def get_absolute_url(self):
         from django.urls import reverse
@@ -117,9 +109,7 @@ class Rating(models.Model):
     user_that_rated = models.ForeignKey("User", nullable=True, on_delete=models.SET_NULL)
     rating = models.BooleanField(default=False)
     resource_key = models.CharField(max_length=50, unique=True)
-    archived = models.BooleanField(default=False)
     date_rated = models.DateTimeField(auto_now_add=True)
-    objects = ArchivedManager()
 
     def get_absolute_url(self):
         from django.urls import reverse
@@ -133,9 +123,7 @@ class Bookmark(models.Model):
     user_that_bookmarked = models.ForeignKey("User", nullable=True, on_delete=models.SET_NULL)
     bookmarked_post = models.ForeignKey("Post", nullable=True, on_delete=models.SET_NULL)
     resource_key = models.CharField(max_length=50, unique=True)
-    archived = models.BooleanField(default=False)
     date_bookmarked = models.DateTimeField(auto_now_add=True)
-    objects = ArchivedManager()
 
     def get_absolute_url(self):
         from django.urls import reverse
@@ -149,9 +137,7 @@ class Archive(models.Model):
     user_that_archived = models.ForeignKey("User", nullable=True, on_delete=models.SET_NULL)
     archived_post = models.ForeignKey("Post", nullable=True, on_delete=models.SET_NULL)
     resource_key = models.CharField(max_length=50, unique=True)
-    archived = models.BooleanField(default=False)
     date_archived = models.DateTimeField(auto_now_add=True)
-    objects = ArchivedManager()
 
     def get_absolute_url(self):
         from django.urls import reverse

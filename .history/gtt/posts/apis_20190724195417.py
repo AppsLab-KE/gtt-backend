@@ -186,20 +186,10 @@ class DeleteComment(APIView):
             }, status=status.HTTP_404_NOT_FOUND)
 
 class ViewReplies(APIView):
-    def get(self, request, resource_key):
-        replies = Reply.objects.filter(replied_comment__resource_key=resource_key)
-        response_list = list()
-        for reply in replies:
-            reply = {
-                "resource_token": reply.resource_key,
-                "user_that_replied": model_to_dict(reply.user_that_replied, fields=['first_name', 'last_name', 'username', 'email', 'profile__avatar']),
-                "reply": reply.reply,
-                "date_replied": reply.date_replied,
-            }
-            response_list.append(reply)
-        return Response(response_list)
+    def get(self, request):
+        pass
 
-class CreateReply(APIView):
+class CreateReply(self, request):
     def post(self, request, resource_key):
         reply = request.data.get('reply')
         user = User.objects.get(email=request.user)
@@ -214,7 +204,7 @@ class CreateReply(APIView):
                 "message": "That comment was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
-class UpdateReply(APIView):
+class UpdateReply(self, request):
     def post(self, request, resource_key):
         reply = request.data.get('reply')
         try:
@@ -229,7 +219,7 @@ class UpdateReply(APIView):
                 "message": "That reply was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
-class DeleteReply(APIView):
+class DeleteReply(self, request):
     def post(self, request, resource_key):
         try:
             reply = Reply.objects.get(resource_key=resource_key)
@@ -245,17 +235,7 @@ class DeleteReply(APIView):
 
 class ViewBookmarks(APIView):
     def get(self, request):
-        user = User.objects.get(email=request.user)
-        bookmarks = Bookmark.objects.filter(user_that_bookmarked__pk=user.id)
-        response_list = list()
-        for bookmark in bookmarks:
-            reply = {
-                "resource_token": bookmark.resource_key,
-                "bookmarked_post": model_to_dict(bookmark.bookmarked_post, fields=['slug', 'post_heading', 'date_published']),
-                "date_bookmarked": bookmark.date_bookmarked,
-            }
-            response_list.append(reply)
-        return Response(response_list)
+        pass
 
 class CreateBookmark(APIView):
     def post(self, request, slug):

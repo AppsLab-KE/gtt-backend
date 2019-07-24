@@ -199,7 +199,7 @@ class ViewReplies(APIView):
             response_list.append(reply)
         return Response(response_list)
 
-class CreateReply(APIView):
+class CreateReply(self, request):
     def post(self, request, resource_key):
         reply = request.data.get('reply')
         user = User.objects.get(email=request.user)
@@ -214,7 +214,7 @@ class CreateReply(APIView):
                 "message": "That comment was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
-class UpdateReply(APIView):
+class UpdateReply(self, request):
     def post(self, request, resource_key):
         reply = request.data.get('reply')
         try:
@@ -229,7 +229,7 @@ class UpdateReply(APIView):
                 "message": "That reply was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
-class DeleteReply(APIView):
+class DeleteReply(self, request):
     def post(self, request, resource_key):
         try:
             reply = Reply.objects.get(resource_key=resource_key)
@@ -245,17 +245,7 @@ class DeleteReply(APIView):
 
 class ViewBookmarks(APIView):
     def get(self, request):
-        user = User.objects.get(email=request.user)
-        bookmarks = Bookmark.objects.filter(user_that_bookmarked__pk=user.id)
-        response_list = list()
-        for bookmark in bookmarks:
-            reply = {
-                "resource_token": bookmark.resource_key,
-                "bookmarked_post": model_to_dict(bookmark.bookmarked_post, fields=['slug', 'post_heading', 'date_published']),
-                "date_bookmarked": bookmark.date_bookmarked,
-            }
-            response_list.append(reply)
-        return Response(response_list)
+        pass
 
 class CreateBookmark(APIView):
     def post(self, request, slug):

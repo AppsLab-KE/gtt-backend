@@ -245,17 +245,7 @@ class DeleteReply(APIView):
 
 class ViewBookmarks(APIView):
     def get(self, request):
-        user = User.objects.get(email=request.user)
-        bookmarks = Bookmark.objects.filter(user_that_bookmarked__pk=user.id)
-        response_list = list()
-        for bookmark in bookmarks:
-            reply = {
-                "resource_token": bookmark.resource_key,
-                "bookmarked_post": model_to_dict(bookmark.bookmarked_post, fields=['slug', 'post_heading', 'date_published']),
-                "date_bookmarked": bookmark.date_bookmarked,
-            }
-            response_list.append(reply)
-        return Response(response_list)
+        pass
 
 class CreateBookmark(APIView):
     def post(self, request, slug):

@@ -1,13 +1,10 @@
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.contrib.auth import get_user_model
 from django.forms.models import model_to_dict
 from .models import (
     Tag, Post, Comment, Reply, Rating, Bookmark, Archive
     )
-
-User = get_user_model()
 
 class ViewPost(APIView):
     def get(self, request, slug):
@@ -15,14 +12,14 @@ class ViewPost(APIView):
         try:
             post = Post.objects.get(slug=slug)
             try:
-                Rating.objects.get(rated_post__pk=post.id, user_that_rated__pk=user.id)
+                Rating.objects.get(rated_post.pk=post.id, user_that_rated.pk=user.id)
             except Rating.DoesNotExist:
                 Rating.objects.create(rated_post=post, user_that_rated=user)
+            post_author = model_to_dict(post.post_author, fields=['first_name', 'last_name', 'username', 'email', 'profile__avatar'])
             return Response({
-                "slug": post.slug,
                 "post_heading": post.post_heading,
                 "post_body": post.post_body,
-                "post_author": model_to_dict(post.post_author, fields=['first_name', 'last_name', 'username', 'email', 'profile__avatar']),
+                "post_author": post_author.update({'profile_url': post.post_author.get_absolute_url()}),
                 "tags": post.tags.all().values('tag_name'),
                 "date_published": post.date_published,
                 "comments_count": post.comments.all().count(),
@@ -35,25 +32,10 @@ class ViewPost(APIView):
 
 class ViewRatedPosts(APIView):
     def get(self, request):
-        user = User.objects.get(email=request.user)
-        user_rated_posts = Post.objects.filter(user_that_rated__pk=user.id, rating__rating=True)
-        response_list = list()
-        for user_rated_post in user_rated_posts:
-            user_post = {
-                "slug": user_rated_post.slug,
-                "post_heading": user_rated_post.post_heading,
-                "post_author": model_to_dict(user_rated_post.post_author, fields=['first_name', 'last_name', 'username', 'email', 'profile__avatar']),
-                "tags": user_rated_post.tags.all().values('tag_name'),
-                "date_published": user_rated_post.date_published,
-                "comments_count": user_rated_post.comments.all().count(),
-                "ratings_count": user_rated_post.ratings.filter(rating=True).count(),
-            }
-            response_list.append(user_post)
-        return Response(response_list)
 
 class ViewRecommendedPosts(APIView):
     def get(self, request):
-        pass
+
 
 class CreatePost(APIView):
     def post(self, request):
@@ -70,7 +52,7 @@ class CreatePost(APIView):
                 tag = Tag.objects.create(tag_name=tag.capitalize())
                 tag_instance_list.append(tag)
         post = Post.objects.create(post_heading=post_heading, post_body=post_body, post_author=user)
-        post.tags.add(*tag_instance_list)
+        post.tags.add(**tag_instance_list)
         return Response({
             "message": "That post was created.",
         })
@@ -79,7 +61,7 @@ class DeletePost(APIView):
     def post(self, request, slug):
         try:
             post = Post.objects.get(slug=slug)
-            post.update({'archived': True})
+            post.update({'viewable': False})
             post.save()
             return Response({
                 "message": "Your post was deleted.",
@@ -105,7 +87,7 @@ class RatePost(APIView):
         try:
             post = Post.objects.get(slug=slug)
             try:
-                rating = Rating.objects.get(rated_post__pk=post.id, user_that_rated__pk=user.id)
+                rating = Rating.objects.get(rated_post.pk=post.id, user_that_rated.pk=user.id)
                 rating.update({'rating': rated})
                 rating.save()
                 if rated:
@@ -127,18 +109,6 @@ class RatePost(APIView):
 
 class ViewComments(APIView):
     def get(self, request, slug):
-        comments = Comment.objects.filter(commented_post__slug=slug)
-        response_list = list()
-        for comment in comments:
-            comment = {
-                "resource_token": comment.resource_key,
-                "user_that_commented": model_to_dict(comment.user_that_commented, fields=['first_name', 'last_name', 'username', 'email', 'profile__avatar']),
-                "comment": comment.comment,
-                "date_commented": comment.date_commented,
-                "replies_count": comment.replies.count(),
-            }
-            response_list.append(comment)
-        return Response(response_list)
 
 class CreateComment(APIView):
     def post(self, request, slug):
@@ -175,7 +145,7 @@ class DeleteComment(APIView):
         comment = request.data.get('comment')
         try:
             comment = Comment.objects.get(resource_key=resource_key)
-            comment.update({'archived': True})
+            comment.update({'viewable': False})
             comment.save()
             return Response({
                 "message": "Your comment for this post was deleted.",
@@ -185,21 +155,7 @@ class DeleteComment(APIView):
                 "message": "That comment was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
-class ViewReplies(APIView):
-    def get(self, request, resource_key):
-        replies = Reply.objects.filter(replied_comment__resource_key=resource_key)
-        response_list = list()
-        for reply in replies:
-            reply = {
-                "resource_token": reply.resource_key,
-                "user_that_replied": model_to_dict(reply.user_that_replied, fields=['first_name', 'last_name', 'username', 'email', 'profile__avatar']),
-                "reply": reply.reply,
-                "date_replied": reply.date_replied,
-            }
-            response_list.append(reply)
-        return Response(response_list)
-
-class CreateReply(APIView):
+class CreateReply(self, request):
     def post(self, request, resource_key):
         reply = request.data.get('reply')
         user = User.objects.get(email=request.user)
@@ -214,7 +170,7 @@ class CreateReply(APIView):
                 "message": "That comment was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
-class UpdateReply(APIView):
+class UpdateReply(self, request):
     def post(self, request, resource_key):
         reply = request.data.get('reply')
         try:
@@ -229,11 +185,11 @@ class UpdateReply(APIView):
                 "message": "That reply was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
-class DeleteReply(APIView):
+class DeleteReply(self, request):
     def post(self, request, resource_key):
         try:
             reply = Reply.objects.get(resource_key=resource_key)
-            reply.update({'archived': True})
+            reply.update({'viewable': False})
             reply.save()
             return Response({
                     "message": "Your reply was deleted.",
@@ -245,17 +201,6 @@ class DeleteReply(APIView):
 
 class ViewBookmarks(APIView):
     def get(self, request):
-        user = User.objects.get(email=request.user)
-        bookmarks = Bookmark.objects.filter(user_that_bookmarked__pk=user.id)
-        response_list = list()
-        for bookmark in bookmarks:
-            reply = {
-                "resource_token": bookmark.resource_key,
-                "bookmarked_post": model_to_dict(bookmark.bookmarked_post, fields=['slug', 'post_heading', 'date_published']),
-                "date_bookmarked": bookmark.date_bookmarked,
-            }
-            response_list.append(reply)
-        return Response(response_list)
 
 class CreateBookmark(APIView):
     def post(self, request, slug):
@@ -275,7 +220,7 @@ class DeleteBookmark(APIView):
     def post(self, request, resource_key):
         try:
             bookmark = Bookmark.objects.get(resource_key=resource_key)
-            bookmark.update({'archived': True})
+            bookmark.update({'viewable': False})
             bookmark.save()
             return Response({
                     "message": "Your bookmark was deleted.",
