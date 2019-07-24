@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.forms.models import model_to_dict
 from .models import (
     Tag, Post, Comment, Reply, Rating, Bookmark, Archive
-)
+    )
 
 User = get_user_model()
 
@@ -80,6 +80,20 @@ class CreatePost(APIView):
             "message": "That post was created.",
         })
 
+class DeletePost(APIView):
+    def post(self, request, slug):
+        try:
+            post = Post.objects.get(slug=slug)
+            post.update({'archived': True})
+            post.save()
+            return Response({
+                "message": "Your post was deleted.",
+            })
+        except Post.DoesNotExist:
+            return Response({
+                "message": "Post was not found.",
+            }, status=status.HTTP_404_NOT_FOUND)
+
 class UpdatePost(APIView):
     def post(self, request, slug):
         post_heading = request.data.get('post_heading')
@@ -87,8 +101,6 @@ class UpdatePost(APIView):
         tags = request.data.getlist('tag')
         try:
             post = Post.objects.get(slug=slug)
-            post.update({'post_heading': post_heading, 'post_body': post_body})
-            post.save()
             tag_instance_list = []
             for tag in tags:
                 try:
@@ -101,20 +113,6 @@ class UpdatePost(APIView):
             post.tags.add(*tag_instance_list)
             return Response({
                 "message": "That post was updated.",
-            })
-        except Post.DoesNotExist:
-            return Response({
-                "message": "Post was not found.",
-            }, status=status.HTTP_404_NOT_FOUND)
-            
-class DeletePost(APIView):
-    def post(self, request, slug):
-        try:
-            post = Post.objects.get(slug=slug)
-            post.update({'archived': True})
-            post.save()
-            return Response({
-                "message": "Your post was deleted.",
             })
         except Post.DoesNotExist:
             return Response({

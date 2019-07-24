@@ -80,6 +80,20 @@ class CreatePost(APIView):
             "message": "That post was created.",
         })
 
+class DeletePost(APIView):
+    def post(self, request, slug):
+        try:
+            post = Post.objects.get(slug=slug)
+            post.update({'archived': True})
+            post.save()
+            return Response({
+                "message": "Your post was deleted.",
+            })
+        except Post.DoesNotExist:
+            return Response({
+                "message": "Post was not found.",
+            }, status=status.HTTP_404_NOT_FOUND)
+
 class UpdatePost(APIView):
     def post(self, request, slug):
         post_heading = request.data.get('post_heading')
@@ -101,20 +115,6 @@ class UpdatePost(APIView):
             post.tags.add(*tag_instance_list)
             return Response({
                 "message": "That post was updated.",
-            })
-        except Post.DoesNotExist:
-            return Response({
-                "message": "Post was not found.",
-            }, status=status.HTTP_404_NOT_FOUND)
-            
-class DeletePost(APIView):
-    def post(self, request, slug):
-        try:
-            post = Post.objects.get(slug=slug)
-            post.update({'archived': True})
-            post.save()
-            return Response({
-                "message": "Your post was deleted.",
             })
         except Post.DoesNotExist:
             return Response({
