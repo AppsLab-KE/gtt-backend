@@ -3,7 +3,10 @@ import secrets
 from django.db import models
 from django.http import Http404
 from django.utils.text import slugify
+from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
+
+User = get_user_model()
 
 def get_random_token(length):
     token = str()
@@ -63,9 +66,10 @@ class Tag(models.Model):
 class Post(models.Model):
     post_heading = models.CharField(max_length=100)
     post_body = models.TextField()
-    post_author = models.ForeignKey("User", nullable=True, on_delete=models.SET_NULL)
+    post_author = models.ForeignKey(User, related_name='posts', null=True, on_delete=models.SET_NULL)
     slug = models.SlugField()
-    tags = models.ManyToManyField("Tag", related_name="tags")
+    tags = models.ManyToManyField("Tag", related_name='tags')
+    read_duration = models.CharField(max_length=6, default="0 min")
     resource_key = models.CharField(max_length=50, unique=True)
     archived = models.BooleanField(default=False)
     date_published = models.DateTimeField(auto_now_add=True)
@@ -81,8 +85,8 @@ class Post(models.Model):
         super(Post, self).save(*args, **kwargs)
 
 class Comment(models.Model):
-    commented_post = models.ForeignKey("Post", nullable=True, on_delete=models.SET_NULL)
-    user_that_commented = models.ForeignKey("User", nullable=True, on_delete=models.SET_NULL)
+    commented_post = models.ForeignKey("Post", related_name='comments', null=True, on_delete=models.SET_NULL)
+    user_that_commented = models.ForeignKey(User, related_name='comments', null=True, on_delete=models.SET_NULL)
     comment = models.TextField()
     resource_key = models.CharField(max_length=50, unique=True)
     archived = models.BooleanField(default=False)
@@ -98,8 +102,8 @@ class Comment(models.Model):
         super(Comment, self).save(*args, **kwargs)
 
 class Reply(models.Model):
-    replied_comment = models.ForeignKey("Comment", nullable=True, on_delete=models.SET_NULL)
-    user_that_replied = models.ForeignKey("User", nullable=True, on_delete=models.SET_NULL)
+    replied_comment = models.ForeignKey("Comment", related_name='replies', null=True, on_delete=models.SET_NULL)
+    user_that_replied = models.ForeignKey(User, related_name='replies', null=True, on_delete=models.SET_NULL)
     reply = models.TextField()
     resource_key = models.CharField(max_length=50, unique=True)
     archived = models.BooleanField(default=False)
@@ -115,8 +119,8 @@ class Reply(models.Model):
         super(Reply, self).save(*args, **kwargs)
 
 class Rating(models.Model):
-    rated_post = models.ForeignKey("Post", nullable=True, on_delete=models.SET_NULL)
-    user_that_rated = models.ForeignKey("User", nullable=True, on_delete=models.SET_NULL)
+    rated_post = models.ForeignKey("Post", related_name='ratings',null=True, on_delete=models.SET_NULL)
+    user_that_rated = models.ForeignKey(User, related_name='ratings', null=True, on_delete=models.SET_NULL)
     rating = models.BooleanField(default=False)
     resource_key = models.CharField(max_length=50, unique=True)
     archived = models.BooleanField(default=False)
@@ -132,8 +136,8 @@ class Rating(models.Model):
         super(Rating, self).save(*args, **kwargs)
 
 class Bookmark(models.Model):
-    user_that_bookmarked = models.ForeignKey("User", nullable=True, on_delete=models.SET_NULL)
-    bookmarked_post = models.ForeignKey("Post", nullable=True, on_delete=models.SET_NULL)
+    bookmarked_post = models.ForeignKey("Post", related_name='bookmarks', null=True, on_delete=models.SET_NULL)
+    user_that_bookmarked = models.ForeignKey(User, related_name='bookmarks', null=True, on_delete=models.SET_NULL)
     resource_key = models.CharField(max_length=50, unique=True)
     archived = models.BooleanField(default=False)
     date_bookmarked = models.DateTimeField(auto_now_add=True)
@@ -146,19 +150,3 @@ class Bookmark(models.Model):
     def save(self, *args, **kwargs):
         self.resource_key = get_resource_key(Bookmark)
         super(Bookmark, self).save(*args, **kwargs)
-
-class Archive(models.Model):
-    user_that_archived = models.ForeignKey("User", nullable=True, on_delete=models.SET_NULL)
-    archived_post = models.ForeignKey("Post", nullable=True, on_delete=models.SET_NULL)
-    resource_key = models.CharField(max_length=50, unique=True)
-    archived = models.BooleanField(default=False)
-    date_archived = models.DateTimeField(auto_now_add=True)
-    objects = ArchivedManager()
-
-    def get_absolute_url(self):
-        from django.urls import reverse
-        return reverse('view_archive', kwargs={'resource_key': self.resource_key})
-    
-    def save(self, *args, **kwargs):
-        self.resource_key = get_resource_key(Archive)
-        super(Archive, self).save(*args, **kwargs)

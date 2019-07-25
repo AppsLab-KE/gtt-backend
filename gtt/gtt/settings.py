@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'oauth2_provider',
     'social_django',
     'rest_framework_social_oauth2',
+    'guardian',
     'users',
     'posts',
 ]
@@ -105,17 +106,18 @@ AUTHENTICATION_BACKENDS = (
     'social_core.backends.gitlab.GitLabOAuth2',
     'rest_framework_social_oauth2.backends.DjangoOAuth2',
     'django.contrib.auth.backends.ModelBackend',
+    'guardian.backends.ObjectPermissionBackend',
 )
 
 # Github configuration
 SOCIAL_AUTH_GITHUB_KEY = '523194ecad2a214413b7'
 SOCIAL_AUTH_GITHUB_SECRET = '70f7fb6822e8f2322eac483e2e5e659b6027f6ce'
 
-SOCIAL_AUTH_BITBUCKET_OAUTH2_KEY = '<your-consumer-key>'
-SOCIAL_AUTH_BITBUCKET_OAUTH2_SECRET = '<your-consumer-secret>'
+SOCIAL_AUTH_BITBUCKET_OAUTH2_KEY = 'eguu8vbWkp59XPWkD3'
+SOCIAL_AUTH_BITBUCKET_OAUTH2_SECRET = 'Kxp8cvrrYzGJmYJU9Xqr2r7MmWfX55gJ'
 
-SOCIAL_AUTH_GITLAB_KEY = ''
-SOCIAL_AUTH_GITLAB_SECRET = ''
+SOCIAL_AUTH_GITLAB_KEY = 'e0d3cf600e66372449cf929d2cc64a4fdd0822b5c4b2af2c93ecf6bc3f67757b'
+SOCIAL_AUTH_GITLAB_SECRET = 'a174b6c1c8e62d4414748317e23d39dba510e5d64f96c6c9beac3214b594227f'
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
