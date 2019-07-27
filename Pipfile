@@ -11,6 +11,8 @@ django = "*"
 django-rest-framework = "*"
 django-rest-framework-social-oauth2 = "*"
 social-auth-app-django = "*"
+pillow = "*"
+django-guardian = "*"
 
 [requires]
 python_version = "3.7"
