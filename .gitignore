@@ -1,0 +1,6 @@
+*/migrations/
+*/pycache/
+gtt/media/post_photos/*
+gtt/media/profile_avatars/*
+*.sqlite3
+.env
