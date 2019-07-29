@@ -1,6 +1,24 @@
-*/migrations/
-*/__pycache__/
+
+**/migrations/
+**/__pycache__/
+
 gtt/media/post_photos/*
 gtt/media/profile_avatars/*
+
+# local env files
+.env.local
+.env.*.local
+.env
+
+# Editor directories and files
+.history
+.vscode
 *.sqlite3
-.*
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+
+
