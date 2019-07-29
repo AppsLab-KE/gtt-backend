@@ -13,6 +13,8 @@ django-rest-framework-social-oauth2 = "*"
 social-auth-app-django = "*"
 pillow = "*"
 django-guardian = "*"
+python-dotenv = "*"
+requests-oauthlib = "*"
 
 [requires]
 python_version = "3.7"
