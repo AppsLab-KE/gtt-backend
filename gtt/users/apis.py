@@ -11,7 +11,9 @@ from django.contrib.auth import get_user_model
 from guardian.shortcuts import assign_perm
 from oauth2_provider.models import Application, AccessToken
 from notifications.signals import notify
-from posts.helpers import get_random_token
+from posts.helpers import (
+    get_random_token, get_bitbucket_access_token, get_github_access_token, get_gitlab_access_token,
+)
 from .forms import ProfileForm
 
 User = get_user_model()
@@ -76,6 +78,39 @@ class TestMakeWriter(APIView):
             return Response({
                 'details': 'That user was not found.',
             }, status=status.HTTP_404_NOT_FOUND)
+
+class BackendAccessToken(APIView):
+    permission_classes = []
+    def post(self, request, backend_name):
+        if 'code' in request.data:
+            code = request.data.get('code')
+            if backend_name in ['bitbucket', 'github', 'gitlab']:
+                if backend_name == 'bitbucket':
+                    redirect_uri = request.data.get('redirect_uri')
+                    response = get_bitbucket_access_token(code, redirect_uri)
+                    return Response(response)
+                elif backend_name == 'github':
+                    response = get_github_access_token(code)
+                    return Response(response)
+                elif backend_name == 'gitlab':
+                    redirect_uri = request.data.get('redirect_uri')
+                    response = get_gitlab_access_token(code, redirect_uri)
+                    return Response(response)
+            else:
+                return Response({
+                    "detail": "Social auth for " + backend_name + " does not exist."
+                }, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({
+                    "details": {
+                        "code": [
+                            {
+                                "message": "This field is required.",
+                                "code": "required",
+                            }
+                        ]
+                    },
+                }, status=status.HTTP_400_BAD_REQUEST)
 
 class TestAccessToken(APIView):
     permission_classes = []
