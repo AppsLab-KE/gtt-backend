@@ -29,7 +29,12 @@ class ViewPost(APIView):
                 except Rating.DoesNotExist:
                     Rating.objects.create(rated_post=post, user_that_rated=user, resource_key=get_resource_key(Rating))
             post_author = model_to_dict(post.post_author, fields=['first_name', 'last_name', 'username', 'email'])
-            post_author.update({'user_avatar': settings.DOMAIN_URL + post.post_author.profile.avatar.url})
+            if 'https' in post.post_author.profile.avatar.url:
+                post_author.update({'user_avatar': get_avatar_url('https://', post.post_author.profile.avatar.url)})
+            elif 'http' in post.post_author.profile.avatar.url:
+                post_author.update({'user_avatar': get_avatar_url('http://', post.post_author.profile.avatar.url)})
+            else:
+                post_author.update({'user_avatar': settings.DOMAIN_URL + post.post_author.profile.avatar.url})
             return Response({
                 "slug": post.slug,
                 "post_heading": post.post_heading,
@@ -59,7 +64,12 @@ class ViewRatedPosts(APIView):
         response_list = list()
         for user_rated_post in user_rated_posts:
             post_author = model_to_dict(user_rated_post.post_author, fields=['first_name', 'last_name', 'username', 'email'])
-            post_author.update({'user_avatar': settings.DOMAIN_URL + user_rated_post.post_author.profile.avatar.url})
+            if 'https' in user_rated_post.post_author.profile.avatar.url:
+                post_author.update({'user_avatar': get_avatar_url('https://', user_rated_post.post_author.profile.avatar.url)})
+            elif 'http' in user_rated_post.post_author.profile.avatar.url:
+                post_author.update({'user_avatar': get_avatar_url('http://', user_rated_post.post_author.profile.avatar.url)})
+            else:
+                post_author.update({'user_avatar': settings.DOMAIN_URL + user_rated_post.post_author.profile.avatar.url})
             user_post = {
                 "slug": user_rated_post.slug,
                 "post_heading": user_rated_post.post_heading,
@@ -89,7 +99,12 @@ class ViewTagPosts(APIView):
             response_list = list()
             for tag_post in tag_posts:
                 post_author = model_to_dict(tag_post.post_author, fields=['first_name', 'last_name', 'username', 'email'])
-                post_author.update({'user_avatar': settings.DOMAIN_URL + tag_post.post_author.profile.avatar.url})
+                if 'https' in tag_post.post_author.profile.avatar.url:
+                    post_author.update({'user_avatar': get_avatar_url('https://', tag_post.post_author.profile.avatar.url)})
+                elif 'http' in tag_post.post_author.profile.avatar.url:
+                    post_author.update({'user_avatar': get_avatar_url('http://', tag_post.post_author.profile.avatar.url)})
+                else:
+                    post_author.update({'user_avatar': settings.DOMAIN_URL + tag_post.post_author.profile.avatar.url})
                 post = {
                     "slug": tag_post.slug,
                     "post_heading": tag_post.post_heading,
@@ -219,7 +234,7 @@ class UpdatePost(APIView):
             return Response({
                 "details": "That post was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
-            
+
 class DeletePost(APIView):
     def post(self, request, slug):
         user = User.objects.get(email=request.user)
@@ -301,7 +316,12 @@ class ViewComments(APIView):
         response_list = list()
         for comment in comments:
             commentor = model_to_dict(comment.user_that_commented, fields=['first_name', 'last_name', 'username', 'email'])
-            commentor.update({'user_avatar': settings.DOMAIN_URL + comment.user_that_commented.profile.avatar.url})
+            if 'https' in comment.user_that_commented.profile.avatar.url:
+                commentor.update({'user_avatar': get_avatar_url('https://', comment.user_that_commented.profile.avatar.url)})
+            elif 'http' in comment.user_that_commented.profile.avatar.url:
+                commentor.update({'user_avatar': get_avatar_url('http://', comment.user_that_commented.profile.avatar.url)})
+            else:
+                commentor.update({'user_avatar': settings.DOMAIN_URL + comment.user_that_commented.profile.avatar.url})
             comment = {
                 "resource_key": comment.resource_key,
                 "user_that_commented": commentor,
@@ -405,7 +425,12 @@ class ViewReplies(APIView):
         response_list = list()
         for reply in replies:
             replier = model_to_dict(reply.user_that_replied, fields=['first_name', 'last_name', 'username', 'email'])
-            replier.update({'user_avatar': settings.DOMAIN_URL + reply.user_that_replied.profile.avatar.url})
+            if 'https' in reply.user_that_replied.profile.avatar.url:
+                replier.update({'user_avatar': get_avatar_url('https://', reply.user_that_replied.profile.avatar.url)})
+            elif 'http' in reply.user_that_replied.profile.avatar.url:
+                replier.update({'user_avatar': get_avatar_url('http://', reply.user_that_replied.profile.avatar.url)})
+            else:
+                replier.update({'user_avatar': settings.DOMAIN_URL + reply.user_that_replied.profile.avatar.url})
             reply = {
                 "resource_key": reply.resource_key,
                 "user_that_replied": replier,
@@ -504,7 +529,12 @@ class ViewBookmarks(APIView):
         response_list = list()
         for bookmark in bookmarks:
             post_author = model_to_dict(bookmark.bookmarked_post.post_author, fields=['first_name', 'last_name', 'username', 'email'])
-            post_author.update({'user_avatar': settings.DOMAIN_URL + bookmark.bookmarked_post.post_author.profile.avatar.url})
+            if 'https' in bookmark.bookmarked_post.post_author.profile.avatar.url:
+                post_author.update({'user_avatar': get_avatar_url('https://', bookmark.bookmarked_post.post_author.profile.avatar.url)})
+            elif 'http' in bookmark.bookmarked_post.post_author.profile.avatar.url:
+                post_author.update({'user_avatar': get_avatar_url('http://', bookmark.bookmarked_post.post_author.profile.avatar.url)})
+            else:
+                post_author.update({'user_avatar': settings.DOMAIN_URL + bookmark.bookmarked_post.post_author.profile.avatar.url})
             reply = {
                 'resource_key': bookmark.resource_key,
                 'bookmarked_post': {

@@ -1,8 +1,10 @@
 import os
 import random
+import re
 import requests
 import string
 import secrets
+import urllib
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
@@ -57,6 +59,11 @@ def get_bitbucket_access_token(code, redirect_uri):
     headers = {'Accept': 'application/json'}
     response =  requests.post('https://bitbucket.org/site/oauth2/access_token', data=data, auth=(client_id, client_secret), headers=headers)
     return response.json()
+
+def get_avatar_url(scheme, quoted_url):
+    m = re.match('^\/media\/https?%3A\/(.*)', quoted_url)
+    matched_url = m.groups()[0]
+    return scheme + urllib.parse.unquote(matched_url)
 
 def get_github_access_token(code):
     client_id = settings.SOCIAL_AUTH_GITHUB_KEY

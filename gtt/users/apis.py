@@ -4,6 +4,7 @@ import string
 import datetime
 from rest_framework import status
 from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django.utils import timezone, timesince
 from django.contrib.auth.models import Group
@@ -81,6 +82,7 @@ class TestMakeWriter(APIView):
 
 class BackendAccessToken(APIView):
     permission_classes = []
+    authentication_classes = []
     def post(self, request, backend_name):
         if 'code' in request.data:
             code = request.data.get('code')
