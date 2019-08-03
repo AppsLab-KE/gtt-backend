@@ -2,6 +2,7 @@ import json
 import secrets
 import string
 import datetime
+from django.conf import settings
 from rest_framework import status
 from braces.views import CsrfExemptMixin
 from rest_framework.views import APIView
@@ -11,6 +12,7 @@ from rest_framework.response import Response
 from django.utils import timezone, timesince
 from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
+from django.forms.models import model_to_dict
 from guardian.shortcuts import assign_perm
 from oauth2_provider.models import Application, AccessToken
 from oauth2_provider.settings import oauth2_settings
@@ -241,9 +243,12 @@ class UpdateAvatar(APIView):
             user = User.objects.get(email=request.user)
             profile_form = ProfileForm({}, request.FILES, instance=user.profile)
             if profile_form.is_valid():
-                profile_form.save()
+                profile = profile_form.save()
+                updated_user = model_to_dict(user, fields=['first_name', 'last_name', 'username', 'email'])
+                updated_user.update({'user_avatar': settings.DOMAIN_URL + profile.avatar.url})
                 return Response({
                     "details": "The avatar was updated.",
+                    "user": updated_user,
                 })
             else:
                 return Response({
