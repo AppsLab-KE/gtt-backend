@@ -3,7 +3,9 @@ import secrets
 import string
 import datetime
 from rest_framework import status
+from braces.views import CsrfExemptMixin
 from rest_framework.views import APIView
+from rest_framework import permissions
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django.utils import timezone, timesince
@@ -11,6 +13,10 @@ from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
 from guardian.shortcuts import assign_perm
 from oauth2_provider.models import Application, AccessToken
+from oauth2_provider.settings import oauth2_settings
+from oauth2_provider.views.mixins import OAuthLibMixin
+from rest_framework_social_oauth2.oauth2_backends import KeepRequestCore
+from rest_framework_social_oauth2.oauth2_endpoints import SocialTokenServer
 from notifications.signals import notify
 from posts.helpers import (
     get_random_token, get_bitbucket_access_token, get_github_access_token, get_gitlab_access_token,
@@ -80,27 +86,59 @@ class TestMakeWriter(APIView):
                 'details': 'That user was not found.',
             }, status=status.HTTP_404_NOT_FOUND)
 
-class BackendAccessToken(APIView):
-    permission_classes = []
+class BackendAccessToken(CsrfExemptMixin, OAuthLibMixin, APIView):
+    server_class = SocialTokenServer
+    validator_class = oauth2_settings.OAUTH2_VALIDATOR_CLASS
+    oauthlib_backend_class = KeepRequestCore
+    permission_classes = (permissions.AllowAny,)
     authentication_classes = []
+
     def post(self, request, backend_name):
         if 'code' in request.data:
             code = request.data.get('code')
             if backend_name in ['bitbucket', 'github', 'gitlab']:
-                if backend_name == 'bitbucket':
-                    redirect_uri = request.data.get('redirect_uri')
-                    response = get_bitbucket_access_token(code, redirect_uri)
-                    return Response(response)
-                elif backend_name == 'github':
-                    response = get_github_access_token(code)
-                    return Response(response)
-                elif backend_name == 'gitlab':
-                    redirect_uri = request.data.get('redirect_uri')
-                    response = get_gitlab_access_token(code, redirect_uri)
-                    return Response(response)
+                try:
+                    if backend_name == 'bitbucket':
+                        redirect_uri = request.data.get('redirectUri')
+                        access_response = get_bitbucket_access_token(code, redirect_uri)
+                        mutable_data = access_response.copy()
+                        request._request.POST = access_response.copy()
+                        for key, value in mutable_data.items():
+                            request._request.POST[key] = value
+                        url, headers, body, resp_status = self.create_token_response(request._request)
+                        response = Response(data=json.loads(body), status=resp_status)
+                        for k, v in headers.items():
+                            response[k] = v
+                        return response
+                    elif backend_name == 'github':
+                        access_response = get_github_access_token(code)
+                        mutable_data = access_response.copy()
+                        request._request.POST = access_response.copy()
+                        for key, value in mutable_data.items():
+                            request._request.POST[key] = value
+                        url, headers, body, resp_status = self.create_token_response(request._request)
+                        response = Response(data=json.loads(body), status=resp_status)
+                        for k, v in headers.items():
+                            response[k] = v
+                        return response
+                    elif backend_name == 'gitlab':
+                        access_response = get_gitlab_access_token(code)
+                        mutable_data = access_response.copy()
+                        request._request.POST = access_response.copy()
+                        for key, value in mutable_data.items():
+                            request._request.POST[key] = value
+                        url, headers, body, resp_status = self.create_token_response(request._request)
+                        response = Response(data=json.loads(body), status=resp_status)
+                        for k, v in headers.items():
+                            response[k] = v
+                        return response
+                except KeyError:
+                    return Response({
+                        "details": "The code you provided was invalid.",
+                    }, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({
-                    "detail": "Social auth for " + backend_name + " does not exist."
+                    "detail": "Social auth for " + backend_name + " does not exist.",
                 }, status=status.HTTP_404_NOT_FOUND)
         else:
             return Response({

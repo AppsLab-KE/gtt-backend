@@ -18,7 +18,7 @@ class User(AbstractUser):
 
 class Profile(models.Model):
     user = models.OneToOneField("User", on_delete=models.CASCADE)
-    avatar = models.ImageField(upload_to=unique_photo_path, default='profile_avatars/default_avatar.png')
+    avatar = models.ImageField(upload_to=unique_photo_path, default='profile_avatars/default_avatar.png', max_length=500)
 
     def get_absolute_url(self):
         from django.urls import reverse

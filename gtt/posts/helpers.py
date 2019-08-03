@@ -8,12 +8,16 @@ import urllib
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
+from oauth2_provider.models import Application
 from django.http import Http404
+from django.http.request import QueryDict
 from .models import (
     Post, Comment, Rating, Reply, Bookmark,
 )
 
 User = get_user_model()
+
+gtt_app, created = Application.objects.get_or_create(name='Geeks Talk Thursday')
 
 def get_random_token(length):
     token = str()
@@ -48,9 +52,14 @@ def get_slug_key(slug):
             break
     return slug_token
 
+def get_avatar_url(scheme, quoted_url):
+    m = re.match(r'^\/media\/https?%3A\/(.*)', quoted_url)
+    matched_url = m.groups()[0]
+    return scheme + urllib.parse.unquote(matched_url)
+
 def get_bitbucket_access_token(code, redirect_uri):
-    client_id=settings.SOCIAL_AUTH_BITBUCKET_OAUTH2_KEY
-    client_secret=settings.SOCIAL_AUTH_BITBUCKET_OAUTH2_SECRET
+    client_id = settings.SOCIAL_AUTH_BITBUCKET_OAUTH2_KEY
+    client_secret = settings.SOCIAL_AUTH_BITBUCKET_OAUTH2_SECRET
     data = {
         'code': code,
         'grant_type': 'authorization_code',
@@ -58,12 +67,12 @@ def get_bitbucket_access_token(code, redirect_uri):
         }
     headers = {'Accept': 'application/json'}
     response =  requests.post('https://bitbucket.org/site/oauth2/access_token', data=data, auth=(client_id, client_secret), headers=headers)
-    return response.json()
-
-def get_avatar_url(scheme, quoted_url):
-    m = re.match('^\/media\/https?%3A\/(.*)', quoted_url)
-    matched_url = m.groups()[0]
-    return scheme + urllib.parse.unquote(matched_url)
+    bitbucket_access_token = response.json()
+    return QueryDict('grant_type=convert_token&client_id=' + gtt_app.client_id + '&client_secret=' + gtt_app.client_secret + '&backend=bitbucket-oauth2&token=' + bitbucket_access_token['access_token'])
+    #print(convert_token_data)
+    #print(settings.DOMAIN_URL + '/' + settings.API + 'oauth2/convert-token')
+    #convert_response =  requests.post(settings.DOMAIN_URL + '/' + settings.API + 'oauth2/convert-token', data=convert_token_data)
+    #print(convert_response)
 
 def get_github_access_token(code):
     client_id = settings.SOCIAL_AUTH_GITHUB_KEY
@@ -75,9 +84,12 @@ def get_github_access_token(code):
         }
     headers = {'Accept': 'application/json'}
     response =  requests.post('https://github.com/login/oauth/access_token', data=data, headers=headers)
-    return response.json()
+    github_access_token = response.json()
+    return QueryDict('grant_type=convert_token&client_id=' + gtt_app.client_id + '&client_secret=' + gtt_app.client_secret + '&backend=github&token=' + github_access_token['access_token'])
+    #convert_response =  requests.post(settings.DOMAIN_URL + '/' + settings.API + 'oauth2/convert-token', data=convert_token_data)
+    #return convert_response.json()
 
-def get_gitlab_access_token(code, redirect_uri):
+def get_gitlab_access_token(code):
     client_id=settings.SOCIAL_AUTH_GITLAB_KEY
     client_secret=settings.SOCIAL_AUTH_GITLAB_SECRET
     data = {
@@ -85,7 +97,6 @@ def get_gitlab_access_token(code, redirect_uri):
         'client_secret': client_secret,
         'code': code,
         'grant_type': 'authorization_code',
-        'redirect_uri': redirect_uri,
         }
     headers = {'Accept': 'application/json'}
     response =  requests.post('http://gitlab.com/oauth/token', data=data, headers=headers)
