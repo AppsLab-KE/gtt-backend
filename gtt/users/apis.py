@@ -2,6 +2,7 @@ import json
 import secrets
 import string
 import datetime
+import logging
 from django.conf import settings
 from rest_framework import status
 from braces.views import CsrfExemptMixin
@@ -23,7 +24,7 @@ from notifications.signals import notify
 from posts.helpers import (
     get_random_token, get_bitbucket_access_token, get_github_access_token, get_gitlab_access_token,
 )
-from .forms import ProfileForm
+from .forms import AvatarForm, UserForm
 
 User = get_user_model()
 
@@ -235,13 +236,35 @@ class ConfirmResetPassword(APIView):
 
 class UpdateProfile(APIView):
     def post(self, request):
-        pass
+        first_name = request.data.get('first_name')
+        last_name = request.data.get('last_name')
+        email = request.data.get('email')
+        try:
+            user = User.objects.get(email=request.user)
+            form = UserForm(request.data, instance=user)
+            if form.is_valid():
+                form_user = form.save()
+                updated_user = model_to_dict(form_user, fields=['first_name', 'last_name', 'username', 'email'])
+                updated_user.update({'user_avatar': settings.DOMAIN_URL + form_user.profile.avatar.url})
+                return Response({
+                    "details": "The user profile was updated.",
+                    "user": updated_user,
+                })
+            else:
+                return Response({
+                        "details": json.loads(form.errors.as_json()),
+                    }, status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist:
+            return Response({
+                    "details": "That user was not found.",
+                }, status=status.HTTP_404_NOT_FOUND)
 
 class UpdateAvatar(APIView):
     def post(self, request):
+        logging.debug(request)
         if 'avatar' in request.FILES:
             user = User.objects.get(email=request.user)
-            profile_form = ProfileForm({}, request.FILES, instance=user.profile)
+            profile_form = AvatarForm({}, request.FILES, instance=user.profile)
             if profile_form.is_valid():
                 profile = profile_form.save()
                 updated_user = model_to_dict(user, fields=['first_name', 'last_name', 'username', 'email'])

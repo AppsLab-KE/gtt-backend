@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 """
 
 import os
+#from decouple import config
+#import dj_database_url
 from dotenv import load_dotenv
 
 # Create .env file path.
@@ -32,22 +34,22 @@ SECRET_KEY = 'u%wl^m@l4124uhs(#*vgrq$bt$^^4^gx&8btyszzx#!%cnl2(g'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', 'geekstalkthursday.co.ke', 'www.geekstalkthursday.co.ke']
 
 # Application definition
 
 INSTALLED_APPS = [
-    'oauth2_provider',
-    'rest_framework',
-    'rest_framework.authtoken',
-    'social_django',
-    'rest_framework_social_oauth2',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'rest_framework.authtoken',
+    'oauth2_provider',
+    'social_django',
+    'rest_framework_social_oauth2',
     'corsheaders',
     'guardian',
     'users',
@@ -58,8 +60,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -67,6 +70,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'users.middleware.GetUserMiddleware',
 ]
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 ROOT_URLCONF = 'gtt.urls'
 
@@ -96,6 +101,25 @@ CORS_ORIGIN_ALLOW_ALL = True
 
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
+
+#SECRET_KEY = config('SECRET_KEY')
+#DEBUG = config('DEBUG', default=False, cast=bool)
+#DATABASES = {
+#    'default': dj_database_url.config(
+#        default=config('DATABASE_URL')
+#    )
+#}
+
+#DATABASES = {
+#    'default': {
+#       'ENGINE': 'django.db.backends.mysql',
+#        'NAME': 'gtt',
+#        'USER': 'gtt_user',
+#        'PASSWORD': '@Heart0fTec#',
+#        'HOST': 'localhost',
+#        'PORT': '',
+#    }
+#}
 
 DATABASES = {
     'default': {
@@ -169,13 +193,32 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Logging
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'DEBUG'),
+        },
+    },
+}
+
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.2/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Africa/Nairobi'
 
 USE_I18N = True
 
@@ -202,3 +245,5 @@ API_VERSION = 'v1'
 API = API_ROOT + "/" + API_VERSION + "/"
 
 DOMAIN_URL = 'http://localhost:8000'
+
+#STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

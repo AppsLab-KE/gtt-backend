@@ -2,6 +2,7 @@ from django.conf import settings
 from django.urls import path
 from .apis import (
     RequestWritership, MakeWriter, TestMakeWriter, BackendAccessToken,TestAccessToken, UpdateAvatar,
+    UpdateProfile,
 )
 
 urlpatterns = [
@@ -11,4 +12,5 @@ urlpatterns = [
     path(settings.API + 'auth/<backend_name>', BackendAccessToken.as_view(), name='backend_access_token'),
     path(settings.API + 'users/access_token/test', TestAccessToken.as_view(), name='test_access_token'),
     path(settings.API + 'users/profile/avatar/update', UpdateAvatar.as_view(), name='update_avatar'),
+    path(settings.API + 'users/profile/update', UpdateProfile.as_view(), name='update_profile'),
 ]

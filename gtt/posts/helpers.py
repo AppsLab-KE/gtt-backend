@@ -17,7 +17,7 @@ from .models import (
 
 User = get_user_model()
 
-gtt_app, created = Application.objects.get_or_create(name='Geeks Talk Thursday')
+gtt_app = Application.objects.get(name='Geeks Talk Thursday')
 
 def get_random_token(length):
     token = str()
