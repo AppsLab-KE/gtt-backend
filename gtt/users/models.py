@@ -13,6 +13,8 @@ def unique_photo_path(instance, filename):
     return 'profile_avatars/{id}/{basename}{randomstring}{ext}'.format(id=instance.user.id, basename=basefilename, randomstring=randomstr, ext=file_extension)
 
 class User(AbstractUser):
+    confirmation_token = models.CharField(max_length=255, null=True)
+
     def __str__(self):
         return self.email
 

@@ -2,7 +2,7 @@ from django.conf import settings
 from django.urls import path
 from .apis import (
     RequestWritership, MakeWriter, TestMakeWriter, BackendAccessToken,TestAccessToken, UpdateAvatar,
-    UpdateProfile,
+    UpdateProfile, RequestResetPassword, CheckResetParams, ResetPassword,
 )
 
 urlpatterns = [
@@ -13,4 +13,7 @@ urlpatterns = [
     path(settings.API + 'users/access_token/test', TestAccessToken.as_view(), name='test_access_token'),
     path(settings.API + 'users/profile/avatar/update', UpdateAvatar.as_view(), name='update_avatar'),
     path(settings.API + 'users/profile/update', UpdateProfile.as_view(), name='update_profile'),
+    path(settings.API + 'users/password/reset/request', RequestResetPassword.as_view(), name='request_reset_password'),
+    path(settings.API + 'users/password/reset/check', CheckResetParams.as_view(), name='check_reset_params'),
+    path(settings.API + 'users/password/reset', ResetPassword.as_view(), name='reset_password'),
 ]

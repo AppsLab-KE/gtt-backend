@@ -6,6 +6,8 @@ import string
 import secrets
 import urllib
 from django.conf import settings
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from oauth2_provider.models import Application
@@ -101,3 +103,29 @@ def get_gitlab_access_token(code):
     headers = {'Accept': 'application/json'}
     response =  requests.post('http://gitlab.com/oauth/token', data=data, headers=headers)
     return response.json()
+
+def user_confirmation_token():
+    token = str()
+    while True:
+        token = get_random_token(60)
+        try:
+            User.objects.get(confirmation_token=token)
+            continue
+        except User.DoesNotExist:
+            break
+    return token
+
+def send_email(subject, recepient, message):
+    status = send_mail(
+        subject,
+        '',
+        settings.EMAIL_HOST_USER,
+        recepient,
+        fail_silently=False,
+        html_message=message,
+        )
+    return bool(status)
+
+def prepare_message(template, **kwargs):
+    message = render_to_string(template, kwargs)
+    return message

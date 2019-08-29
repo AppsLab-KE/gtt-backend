@@ -23,6 +23,7 @@ from rest_framework_social_oauth2.oauth2_endpoints import SocialTokenServer
 from notifications.signals import notify
 from posts.helpers import (
     get_random_token, get_bitbucket_access_token, get_github_access_token, get_gitlab_access_token,
+    user_confirmation_token, send_email, prepare_message,
 )
 from .forms import AvatarForm, UserForm
 
@@ -224,21 +225,147 @@ class TestAccessToken(APIView):
                 "scope": access_token.scope,
             })
 
-class ResetPassword(APIView):
+class RequestResetPassword(APIView):
     permission_classes = []
     def post(self, request):
-        pass
+        email = request.data.get('email', False)
+        if email:
+            try:
+                user = User.objects.get(email=email)
+                confirmation_token = user_confirmation_token()
+                user.confirmation_token = confirmation_token
+                subject = "Password reset request"
+                recepient = [email]
+                message = prepare_message(
+                        template="reset_password.html",
+                        username=user.username,
+                        confirmation_token=confirmation_token,
+                        url=settings.DOMAIN_URL)
+                success = send_email(subject, recepient, message)
+                if success:
+                    user.save()
+                    return Response({
+                        "details": "A reset link was sent to the email.",
+                    })
+                else:
+                    return Response({
+                        "details": {
+                            "email": [
+                                {
+                                    "message": "This field was incorrect.",
+                                    "code": "incorrect",
+                                }
+                            ]
+                        },
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            except User.DoesNotExist:
+                return Response({
+                    'details': 'That user was not found.',
+                }, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({
+                "details": {
+                    "email": [
+                        {
+                            "message": "This field is required.",
+                            "code": "required",
+                        }
+                    ]
+                },
+            }, status=status.HTTP_400_BAD_REQUEST)
 
-class ConfirmResetPassword(APIView):
+class CheckResetParams(APIView):
+    permission_classes = []
+    def post(self, request):
+        confirmation_token = request.data.get('confirmation_token', False)
+        username = request.data.get('username', False)
+        if confirmation_token and username:
+            try:
+                User.objects.get(confirmation_token=confirmation_token, username=username)
+                return Response({
+                    'detail': 'The reset parameters are valid.'
+                })
+            except User.DoesNotExist:
+                return Response({
+                    'detail': 'That user was not found.'
+                }, status=status.HTTP_404_NOT_FOUND)
+        elif username and not confirmation_token:
+            return Response({
+                "details": {
+                    "confirmation_token": [
+                        {
+                            "message": "This field is required.",
+                            "code": "required",
+                        }
+                    ]
+                },
+            }, status=status.HTTP_400_BAD_REQUEST)
+        elif not username and confirmation_token:
+            return Response({
+                "details": {
+                    "username": [
+                        {
+                            "message": "This field is required.",
+                            "code": "required",
+                        }
+                    ]
+                },
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+class ResetPassword(APIView):
     permission_classes = []
     def get(self, request):
-        pass
+        confirmation_token = request.data.get('confirmation_token', False)
+        username = request.data.get('username', False)
+        password = request.data.get('password', False)
+        if confirmation_token and username and password:
+            try:
+                user = User.objects.get(confirmation_token=confirmation_token, username=username)
+                user.set_password(password)
+                user.save()
+                return Response({
+                    'detail': 'Password was reset successfully.'
+                })
+            except User.DoesNotExist:
+                return Response({
+                    'detail': 'That user was not found.'
+                }, status=status.HTTP_404_NOT_FOUND)
+        elif not confirmation_token and username and password:
+            return Response({
+                "details": {
+                    "confirmation_token": [
+                        {
+                            "message": "This field is required.",
+                            "code": "required",
+                        }
+                    ]
+                },
+            }, status=status.HTTP_400_BAD_REQUEST)
+        elif confirmation_token and not username and password:
+            return Response({
+                "details": {
+                    "username": [
+                        {
+                            "message": "This field is required.",
+                            "code": "required",
+                        }
+                    ]
+                },
+            }, status=status.HTTP_400_BAD_REQUEST)
+        elif confirmation_token and username and not password:
+            return Response({
+                "details": {
+                    "password": [
+                        {
+                            "message": "This field is required.",
+                            "code": "required",
+                        }
+                    ]
+                },
+            }, status=status.HTTP_400_BAD_REQUEST)
 
 class UpdateProfile(APIView):
     def post(self, request):
-        first_name = request.data.get('first_name')
-        last_name = request.data.get('last_name')
-        email = request.data.get('email')
         try:
             user = User.objects.get(email=request.user)
             form = UserForm(request.data, instance=user)
