@@ -104,6 +104,18 @@ def get_gitlab_access_token(code):
     response =  requests.post('http://gitlab.com/oauth/token', data=data, headers=headers)
     return response.json()
 
+def get_password_querydict(username, password):
+    return QueryDict('grant_type=password&client_id=' + gtt_app.client_id + '&client_secret=' + gtt_app.client_secret + '&username=' + username + '&password=' + password)
+
+def get_token_querydict(refresh_token):
+    return QueryDict('grant_type=refresh_token&client_id=' + gtt_app.client_id + '&client_secret=' + gtt_app.client_secret + '&refresh_token=' + refresh_token)
+
+def get_revoke_token_querydict(token):
+    return QueryDict('client_id=' + gtt_app.client_id + '&client_secret=' + gtt_app.client_secret + '&token=' + token)
+
+def get_app():
+    return gtt_app
+
 def user_confirmation_token():
     token = str()
     while True:

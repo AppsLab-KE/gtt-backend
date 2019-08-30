@@ -23,7 +23,8 @@ from rest_framework_social_oauth2.oauth2_endpoints import SocialTokenServer
 from notifications.signals import notify
 from posts.helpers import (
     get_random_token, get_bitbucket_access_token, get_github_access_token, get_gitlab_access_token,
-    user_confirmation_token, send_email, prepare_message,
+    user_confirmation_token, send_email, prepare_message, get_password_querydict, get_token_querydict,
+    get_revoke_token_querydict, get_app,
 )
 from .forms import AvatarForm, UserForm
 
@@ -156,6 +157,159 @@ class BackendAccessToken(CsrfExemptMixin, OAuthLibMixin, APIView):
                     },
                 }, status=status.HTTP_400_BAD_REQUEST)
 
+class Oauth2TokenView(CsrfExemptMixin, OAuthLibMixin, APIView):
+    server_class = oauth2_settings.OAUTH2_SERVER_CLASS
+    validator_class = oauth2_settings.OAUTH2_VALIDATOR_CLASS
+    oauthlib_backend_class = oauth2_settings.OAUTH2_BACKEND_CLASS
+    permission_classes = (permissions.AllowAny,)
+    authentication_classes = []
+
+    def post(self, request, *args, **kwargs):
+        # Use the rest framework `.data` to fake the post body of the django request.
+        grant_type = request.data.get('grant_type')
+        if grant_type == 'password':
+            username = request.data.get('username', False)
+            password = request.data.get('password', False)
+            if username and password:
+                password_querydict = get_password_querydict(username, password)
+                mutable_data = password_querydict.copy()
+                request._request.POST = password_querydict.copy()
+                for key, value in mutable_data.items():
+                    request._request.POST[key] = value
+
+                url, headers, body, resp_status = self.create_token_response(request._request)
+                response = Response(data=json.loads(body), status=resp_status)
+
+                for k, v in headers.items():
+                    response[k] = v
+                return response
+            elif username and not password:
+                return Response({
+                    "details": {
+                        "password": [
+                            {
+                                "message": "This field is required.",
+                                "code": "required",
+                            }
+                        ]
+                    },
+                }, status=status.HTTP_400_BAD_REQUEST)
+            elif not username and password:
+                return Response({
+                    "details": {
+                        "username": [
+                            {
+                                "message": "This field is required.",
+                                "code": "required",
+                            }
+                        ]
+                    },
+                }, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({
+                    "details": {
+                        "username": [
+                            {
+                                "message": "This field is required.",
+                                "code": "required",
+                            }
+                        ],
+                        "password": [
+                            {
+                                "message": "This field is required.",
+                                "code": "required",
+                            }
+                        ]
+                    },
+                }, status=status.HTTP_400_BAD_REQUEST)
+        elif grant_type == 'refresh_token':
+            refresh_token = request.data.get('refresh_token', False)
+            if refresh_token:
+                token_querydict = get_token_querydict(refresh_token)
+                mutable_data = token_querydict.copy()
+                request._request.POST = token_querydict.copy()
+                for key, value in mutable_data.items():
+                    request._request.POST[key] = value
+
+                url, headers, body, resp_status = self.create_token_response(request._request)
+                response = Response(data=json.loads(body), status=resp_status)
+
+                for k, v in headers.items():
+                    response[k] = v
+                return response
+            else:
+                return Response({
+                    "details": {
+                        "refresh_token": [
+                            {
+                                "message": "This field is required.",
+                                "code": "required",
+                            }
+                        ]
+                    },
+                }, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({
+                "details": {
+                    "grant_type": [
+                        {
+                            "message": "This field is required.",
+                            "code": "required",
+                        }
+                    ]
+                },
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+class RevokeOauth2TokenView(CsrfExemptMixin, OAuthLibMixin, APIView):
+    """
+    Implements an endpoint to revoke access or refresh tokens
+    """
+    server_class = oauth2_settings.OAUTH2_SERVER_CLASS
+    validator_class = oauth2_settings.OAUTH2_VALIDATOR_CLASS
+    oauthlib_backend_class = oauth2_settings.OAUTH2_BACKEND_CLASS
+
+    def post(self, request, *args, **kwargs):
+        # Use the rest framework `.data` to fake the post body of the django request.
+        token = request.data.get('token', False)
+        if token:
+            revoke_token_querydict = get_revoke_token_querydict(token)
+            mutable_data = revoke_token_querydict.copy()
+            request._request.POST = revoke_token_querydict.copy()
+            for key, value in mutable_data.items():
+                request._request.POST[key] = value
+
+            url, headers, body, resp_status = self.create_revocation_response(request._request)
+            response = Response(data=json.loads(body) if body else {"detail": "That token was revoked successfully."}, status=resp_status if body else 200)
+
+            for k, v in headers.items():
+                response[k] = v
+            return response
+        else:
+            return Response({
+                "details": {
+                    "token": [
+                        {
+                            "message": "This field is required.",
+                            "code": "required",
+                        }
+                    ]
+                },
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+class InvalidateSessions(APIView):
+    def post(self, request, *args, **kwargs):
+        try:
+            app = get_app()
+            tokens = AccessToken.objects.filter(user=request.user, application=app)
+            tokens.delete()
+            return Response({
+                "detail": "All your session tokens were invalidated."
+                })
+        except Application.DoesNotExist:
+            return Response({
+                "detail": "The application linked to the provided client_id could not be found."
+            }, status=status.HTTP_400_BAD_REQUEST)
+    
 class TestAccessToken(APIView):
     permission_classes = []
     def get(self, request):
@@ -311,10 +465,27 @@ class CheckResetParams(APIView):
                     ]
                 },
             }, status=status.HTTP_400_BAD_REQUEST)
+        elif not username and not confirmation_token:
+            return Response({
+                "details": {
+                    "username": [
+                        {
+                            "message": "This field is required.",
+                            "code": "required",
+                        }
+                    ],
+                    "confirmation_token": [
+                        {
+                            "message": "This field is required.",
+                            "code": "required",
+                        }
+                    ]
+                },
+            }, status=status.HTTP_400_BAD_REQUEST)
 
 class ResetPassword(APIView):
     permission_classes = []
-    def get(self, request):
+    def post(self, request):
         confirmation_token = request.data.get('confirmation_token', False)
         username = request.data.get('username', False)
         password = request.data.get('password', False)
@@ -355,6 +526,29 @@ class ResetPassword(APIView):
         elif confirmation_token and username and not password:
             return Response({
                 "details": {
+                    "password": [
+                        {
+                            "message": "This field is required.",
+                            "code": "required",
+                        }
+                    ]
+                },
+            }, status=status.HTTP_400_BAD_REQUEST)
+        elif not confirmation_token and not username and not password:
+            return Response({
+                "details": {
+                    "confirmation_token": [
+                        {
+                            "message": "This field is required.",
+                            "code": "required",
+                        }
+                    ],
+                    "username": [
+                        {
+                            "message": "This field is required.",
+                            "code": "required",
+                        }
+                    ],
                     "password": [
                         {
                             "message": "This field is required.",
