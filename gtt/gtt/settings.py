@@ -144,6 +144,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
 }
 
 OAUTH2_PROVIDER = {
@@ -208,21 +209,21 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Logging
 
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'DEBUG'),
-        },
-    },
-}
+#LOGGING = {
+#    'version': 1,
+#    'disable_existing_loggers': False,
+#    'handlers': {
+#        'console': {
+#            'class': 'logging.StreamHandler',
+#        },
+#   },
+#   'loggers': {
+#        'django': {
+#            'handlers': ['console'],
+#            'level': os.getenv('DJANGO_LOG_LEVEL', 'DEBUG'),
+#        },
+#    },
+#}
 
 
 

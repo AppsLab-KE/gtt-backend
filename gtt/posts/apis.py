@@ -1,5 +1,8 @@
 import json
+from rest_framework import generics
+from rest_framework import filters
 from rest_framework import status
+from .paginator import LimitOffsetPaginationWithDefault
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from guardian.shortcuts import assign_perm
@@ -9,6 +12,9 @@ from django.forms.models import model_to_dict
 from django.utils.text import slugify
 from .forms import (
     PostForm, RatingForm, CommentForm, ReplyForm,
+)
+from .serializers import (
+    CommentSerializer, ReplySerializer, PostSerializer, BookmarkSerializer,
 )
 from .models import (
     Tag, Post, Comment, Reply, Rating, Bookmark,
@@ -28,100 +34,35 @@ class ViewPost(APIView):
                     Rating.objects.get(rated_post__pk=post.id, user_that_rated__pk=user.id)
                 except Rating.DoesNotExist:
                     Rating.objects.create(rated_post=post, user_that_rated=user, resource_key=get_resource_key(Rating))
-            post_author = model_to_dict(post.post_author, fields=['first_name', 'last_name', 'username', 'email'])
-            if 'https' in post.post_author.profile.avatar.url:
-                post_author.update({'user_avatar': get_avatar_url('https://', post.post_author.profile.avatar.url)})
-            elif 'http' in post.post_author.profile.avatar.url:
-                post_author.update({'user_avatar': get_avatar_url('http://', post.post_author.profile.avatar.url)})
-            else:
-                post_author.update({'user_avatar': settings.DOMAIN_URL + post.post_author.profile.avatar.url})
-            return Response({
-                "slug": post.slug,
-                "post_heading": post.post_heading,
-                "post_heading_image": settings.DOMAIN_URL + post.post_heading_image.url,
-                "post_body": post.post_body,
-                "post_author": post_author,
-                "tags": post.tags.all().values('tag_name'),
-                "read_duration": post.read_duration,
-                "date_published": post.date_published,
-                "comments_count": post.comments.all().count(),
-                "ratings_count": post.ratings.filter(rating=True).count(),
-            })
+            serializer = PostSerializer(instance=post)
+            return Response(serializer.data)
         except Post.DoesNotExist:
             return Response({
-                "details": "That post was not found.",
+                "detail": "That post was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
 class ViewRatedPosts(APIView):
     def get(self, request):
         user = User.objects.get(email=request.user)
-        if 'offset' in request.data and 'limit' in request.data:
-            offset = int(request.data.get('offset'))
-            limit = int(request.data.get('limit'))
-            user_rated_posts = Post.objects.filter( ratings__user_that_rated__pk=user.id, ratings__rating=True)[offset:offset+limit]
-        else:
-            user_rated_posts = Post.objects.filter( ratings__user_that_rated__pk=user.id, ratings__rating=True)
-        response_list = list()
-        for user_rated_post in user_rated_posts:
-            post_author = model_to_dict(user_rated_post.post_author, fields=['first_name', 'last_name', 'username', 'email'])
-            if 'https' in user_rated_post.post_author.profile.avatar.url:
-                post_author.update({'user_avatar': get_avatar_url('https://', user_rated_post.post_author.profile.avatar.url)})
-            elif 'http' in user_rated_post.post_author.profile.avatar.url:
-                post_author.update({'user_avatar': get_avatar_url('http://', user_rated_post.post_author.profile.avatar.url)})
-            else:
-                post_author.update({'user_avatar': settings.DOMAIN_URL + user_rated_post.post_author.profile.avatar.url})
-            user_post = {
-                "slug": user_rated_post.slug,
-                "post_heading": user_rated_post.post_heading,
-                "post_heading_image": settings.DOMAIN_URL + user_rated_post.post_heading_image.url,
-                "post_body_preview": user_rated_post.post_body[:100] + "...",
-                "post_author": post_author,
-                "tags": user_rated_post.tags.all().values('tag_name'),
-                "read_duration": user_rated_post.read_duration,
-                "date_published": user_rated_post.date_published,
-                "comments_count": user_rated_post.comments.all().count(),
-                "ratings_count": user_rated_post.ratings.filter(rating=True).count(),
-            }
-            response_list.append(user_post)
-        return Response(response_list)
+        user_rated_posts = Post.objects.filter(ratings__user_that_rated__pk=user.id, ratings__rating=True)
+        paginator = LimitOffsetPaginationWithDefault()
+        context = paginator.paginate_queryset(user_rated_posts, request)
+        serializer = PostSerializer(context, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 class ViewTagPosts(APIView):
     permission_classes = []
     def get(self, request, tag_name):
         try:
             tag = Tag.objects.get(tag_name__iexact=tag_name)
-            if 'offset' in request.data and 'limit' in request.data:
-                offset = int(request.data.get('offset'))
-                limit = int(request.data.get('limit'))
-                tag_posts = tag.posts.all()[offset:offset+limit]
-            else:
-                tag_posts = tag.posts.all()
-            response_list = list()
-            for tag_post in tag_posts:
-                post_author = model_to_dict(tag_post.post_author, fields=['first_name', 'last_name', 'username', 'email'])
-                if 'https' in tag_post.post_author.profile.avatar.url:
-                    post_author.update({'user_avatar': get_avatar_url('https://', tag_post.post_author.profile.avatar.url)})
-                elif 'http' in tag_post.post_author.profile.avatar.url:
-                    post_author.update({'user_avatar': get_avatar_url('http://', tag_post.post_author.profile.avatar.url)})
-                else:
-                    post_author.update({'user_avatar': settings.DOMAIN_URL + tag_post.post_author.profile.avatar.url})
-                post = {
-                    "slug": tag_post.slug,
-                    "post_heading": tag_post.post_heading,
-                    "post_heading_image": settings.DOMAIN_URL + tag_post.post_heading_image.url,
-                    "post_body_preview": tag_post.post_body[:100] + "...",
-                    "post_author": post_author,
-                    "tags": tag_post.tags.all().values('tag_name'),
-                    "read_duration": tag_post.read_duration,
-                    "date_published": tag_post.date_published,
-                    "comments_count": tag_post.comments.all().count(),
-                    "ratings_count": tag_post.ratings.filter(rating=True).count(),
-                }
-                response_list.append(post)
-            return Response(response_list)
+            tag_posts = tag.posts.all()
+            paginator = LimitOffsetPaginationWithDefault()
+            context = paginator.paginate_queryset(tag_posts, request)
+            serializer = PostSerializer(context, many=True)
+            return paginator.get_paginated_response(serializer.data)
         except Tag.DoesNotExist:
             return Response({
-                "details": "That tag was not found.",
+                "detail": "That tag was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
 class ViewPopularPosts(APIView):
@@ -133,10 +74,13 @@ class ViewRecommendedPosts(APIView):
     def get(self, request):
         pass
 
-class SearchPosts(APIView):
+class SearchPosts(generics.ListCreateAPIView):
     permission_classes = []
-    def post(self, request):
-        pass
+    search_fields = ['tags__tag_name', 'post_author__first_name', 'post_author__last_name', 'post_author__username', 'post_heading', 'post_body']
+    filter_backends = (filters.SearchFilter,)
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+
 
 class CreatePost(APIView):
     def post(self, request):
@@ -169,20 +113,22 @@ class CreatePost(APIView):
                     post.tags.add(*tag_instance_list)
                     assign_perm('posts.change_post', user, post)
                     assign_perm('posts.delete_post', user, post)
+                    serializer = PostSerializer(instance=post)
                     return Response({
-                        "details": "That post was created.",
+                        "detail": "That post was created.",
+                        "post": serializer.data,
                     })
                 else:
                     return Response({
-                        "details": json.loads(post_form.errors.as_json()),
+                        "detail": json.loads(post_form.errors.as_json()),
                     }, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({
-                    "details": "You cannot create a post.",
+                    "detail": "You cannot create a post.",
                 }, status=status.HTTP_403_FORBIDDEN)
         else:
             return Response({
-                    "details": {
+                    "detail": {
                         "post_heading_image": [
                             {
                                 "message": "This field is required.",
@@ -191,6 +137,7 @@ class CreatePost(APIView):
                         ]
                     },
                 }, status=status.HTTP_400_BAD_REQUEST)
+
 class UpdatePost(APIView):
     def post(self, request, slug):
         post_heading = request.data.get('post_heading')
@@ -209,7 +156,7 @@ class UpdatePost(APIView):
                 }, request.FILES, instance=post)
                 tag_instance_list = []
                 if post_form.is_valid():
-                    post = post_form.save()
+                    updated_post = post_form.save()
                     for tag in tags:
                         try:
                             tag = Tag.objects.get(tag_name__iexact=tag)
@@ -217,22 +164,24 @@ class UpdatePost(APIView):
                         except Tag.DoesNotExist:
                             tag = Tag.objects.create(tag_name=tag.capitalize(), resource_key=get_resource_key(Tag), slug=slugify(tag.capitalize()))
                             tag_instance_list.append(tag)
-                    post.tags.clear()
-                    post.tags.add(*tag_instance_list)
+                    updated_post.tags.clear()
+                    updated_post.tags.add(*tag_instance_list)
+                    serializer = PostSerializer(instance=updated_post)
                     return Response({
-                        "details": "That post was updated.",
+                        "detail": "That post was updated.",
+                        "post": serializer.data,
                     })
                 else:
                     return Response({
-                        "details": json.loads(post_form.errors.as_json()),
+                        "detail": json.loads(post_form.errors.as_json()),
                     }, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({
-                    "details": "You cannot update this post.",
+                    "detail": "You cannot update this post.",
                 }, status=status.HTTP_403_FORBIDDEN)
         except Post.DoesNotExist:
             return Response({
-                "details": "That post was not found.",
+                "detail": "That post was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
 class DeletePost(APIView):
@@ -260,15 +209,15 @@ class DeletePost(APIView):
                     bookmark.archived = True
                 Bookmark.objects.bulk_update(bookmarks, ['archived'])
                 return Response({
-                    "details": "Your post was deleted.",
+                    "detail": "Your post was deleted.",
                 })
             else:
                 return Response({
-                    "details": "That cannot delete that post.",
+                    "detail": "That cannot delete that post.",
                 }, status=status.HTTP_403_FORBIDDEN)
         except Post.DoesNotExist:
             return Response({
-                "details": "That post was not found.",
+                "detail": "That post was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
 class RatePost(APIView):
@@ -286,51 +235,32 @@ class RatePost(APIView):
                     rating_form.save()
                     if rated:
                         return Response({
-                            "details": "You liked this post.",
+                            "detail": "You liked this post.",
                         })
                     else:
                         return Response({
-                            "details": "You disliked this post.",
+                            "detail": "You disliked this post.",
                         })
                 else:
                     return Response({
-                        "details": json.loads(rating_form.errors.as_json()),
+                        "detail": json.loads(rating_form.errors.as_json()),
                     }, status=status.HTTP_400_BAD_REQUEST)
             except Rating.DoesNotExist:
                 return Response({
-                "details": "Rating was not successful.",
+                "detail": "Rating was not successful.",
             }, status=status.HTTP_404_NOT_FOUND)
         except Post.DoesNotExist:
             return Response({
-                "details": "That post was not found.",
+                "detail": "That post was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
 class ViewComments(APIView):
     def get(self, request, slug):
-        if 'offset' in request.data and 'limit' in request.data:
-            offset = int(request.data.get('offset'))
-            limit = int(request.data.get('limit'))
-            comments = Comment.objects.filter(commented_post__slug=slug)[offset:offset+limit]
-        else:
-            comments = Comment.objects.filter(commented_post__slug=slug)
-        response_list = list()
-        for comment in comments:
-            commentor = model_to_dict(comment.user_that_commented, fields=['first_name', 'last_name', 'username', 'email'])
-            if 'https' in comment.user_that_commented.profile.avatar.url:
-                commentor.update({'user_avatar': get_avatar_url('https://', comment.user_that_commented.profile.avatar.url)})
-            elif 'http' in comment.user_that_commented.profile.avatar.url:
-                commentor.update({'user_avatar': get_avatar_url('http://', comment.user_that_commented.profile.avatar.url)})
-            else:
-                commentor.update({'user_avatar': settings.DOMAIN_URL + comment.user_that_commented.profile.avatar.url})
-            comment = {
-                "resource_key": comment.resource_key,
-                "user_that_commented": commentor,
-                "comment": comment.comment,
-                "date_commented": comment.date_commented,
-                "replies_count": comment.replies.count(),
-            }
-            response_list.append(comment)
-        return Response(response_list)
+        comments = Comment.objects.filter(commented_post__slug=slug)
+        paginator = LimitOffsetPaginationWithDefault()
+        context = paginator.paginate_queryset(comments, request)
+        serializer = CommentSerializer(context, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 class CreateComment(APIView):
     def post(self, request, slug):
@@ -349,16 +279,18 @@ class CreateComment(APIView):
                 comment.save()
                 assign_perm('posts.change_comment', user, comment)
                 assign_perm('posts.delete_comment', user, comment)
+                serializer = CommentSerializer(instance=comment)
                 return Response({
-                    "details": "You commented on this post.",
+                    "detail": "You commented on this post.",
+                    "comment": serializer.data,
                 })
             else:
                 return Response({
-                    "details": json.loads(comment_form.errors.as_json()),
+                    "detail": json.loads(comment_form.errors.as_json()),
                 }, status=status.HTTP_400_BAD_REQUEST)
         except Post.DoesNotExist:
             return Response({
-                "details": "That post was not found.",
+                "detail": "That post was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
 class UpdateComment(APIView):
@@ -372,21 +304,23 @@ class UpdateComment(APIView):
                     'comment': comment,
                 }, instance=comment_instance)
                 if comment_form.is_valid():
-                    comment_form.save()
+                    updated_comment = comment_form.save()
+                    serializer = CommentSerializer(instance=updated_comment)
                     return Response({
-                        "details": "Your comment for this post was updated.",
+                        "detail": "Your comment for this post was updated.",
+                        "comment": serializer.data,
                     })
                 else:
                     return Response({
-                        "details": json.loads(comment_form.errors.as_json()),
+                        "detail": json.loads(comment_form.errors.as_json()),
                     }, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({
-                    "details": "You cannot update this comment.",
+                    "detail": "You cannot update this comment.",
                 }, status=status.HTTP_403_FORBIDDEN)
         except Comment.DoesNotExist:
             return Response({
-                "details": "That comment was not found.",
+                "detail": "That comment was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
 class DeleteComment(APIView):
@@ -403,42 +337,24 @@ class DeleteComment(APIView):
                     reply.archived = True
                 Reply.objects.bulk_update(replies, ['archived'])
                 return Response({
-                    "details": "Your comment for this post was deleted.",
+                    "detail": "Your comment for this post was deleted.",
                 })
             else:
                 return Response({
-                    "details": "That cannot delete that comment.",
+                    "detail": "That cannot delete that comment.",
                 }, status=status.HTTP_403_FORBIDDEN)
         except Comment.DoesNotExist:
             return Response({
-                "details": "That comment was not found.",
+                "detail": "That comment was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
 class ViewReplies(APIView):
     def get(self, request, resource_key):
-        if 'offset' in request.data and 'limit' in request.data:
-            offset = int(request.data.get('offset'))
-            limit = int(request.data.get('limit'))
-            replies = Reply.objects.filter(replied_comment__resource_key=resource_key)[offset:offset+limit]
-        else:
-            replies = Reply.objects.filter(replied_comment__resource_key=resource_key)
-        response_list = list()
-        for reply in replies:
-            replier = model_to_dict(reply.user_that_replied, fields=['first_name', 'last_name', 'username', 'email'])
-            if 'https' in reply.user_that_replied.profile.avatar.url:
-                replier.update({'user_avatar': get_avatar_url('https://', reply.user_that_replied.profile.avatar.url)})
-            elif 'http' in reply.user_that_replied.profile.avatar.url:
-                replier.update({'user_avatar': get_avatar_url('http://', reply.user_that_replied.profile.avatar.url)})
-            else:
-                replier.update({'user_avatar': settings.DOMAIN_URL + reply.user_that_replied.profile.avatar.url})
-            reply = {
-                "resource_key": reply.resource_key,
-                "user_that_replied": replier,
-                "reply": reply.reply,
-                "date_replied": reply.date_replied,
-            }
-            response_list.append(reply)
-        return Response(response_list)
+        replies = Reply.objects.filter(replied_comment__resource_key=resource_key)
+        paginator = LimitOffsetPaginationWithDefault()
+        context = paginator.paginate_queryset(replies, request)
+        serializer = ReplySerializer(context, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 class CreateReply(APIView):
     def post(self, request, resource_key):
@@ -457,16 +373,18 @@ class CreateReply(APIView):
                 reply.save()
                 assign_perm('posts.change_reply', user, reply)
                 assign_perm('posts.delete_reply', user, reply)
+                serializer = ReplySerializer(instance=reply)
                 return Response({
-                    "details": "Your reply was successful.",
+                    "detail": "Your reply was successful.",
+                    "reply": serializer.data,
                 })
             else:
                 return Response({
-                    "details": json.loads(reply_form.errors.as_json()),
+                    "detail": json.loads(reply_form.errors.as_json()),
                 }, status=status.HTTP_400_BAD_REQUEST)
         except Comment.DoesNotExist:
             return Response({
-                "details": "That comment was not found.",
+                "detail": "That comment was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
 class UpdateReply(APIView):
@@ -480,21 +398,23 @@ class UpdateReply(APIView):
                     'reply': reply,
                 }, instance=reply_instance)
                 if reply_form.is_valid():
-                    reply_form.save()
+                    updated_reply = reply_form.save()
+                    serializer = ReplySerializer(instance=updated_reply)
                     return Response({
-                        "details": "Your reply was updated.",
+                        "detail": "Your reply was updated.",
+                        "comment": serializer.data,
                     })
                 else:
                     return Response({
-                        "details": json.loads(reply_form.errors.as_json()),
+                        "detail": json.loads(reply_form.errors.as_json()),
                     }, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({
-                    "details": "That cannot update that reply.",
+                    "detail": "That cannot update that reply.",
                 }, status=status.HTTP_403_FORBIDDEN)
         except Reply.DoesNotExist:
             return Response({
-                "details": "That reply was not found.",
+                "detail": "That reply was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
 class DeleteReply(APIView):
@@ -506,53 +426,26 @@ class DeleteReply(APIView):
                 reply.archived = True
                 reply.save()
                 return Response({
-                    "details": "Your reply was deleted.",
+                    "detail": "Your reply was deleted.",
                 })
             else:
                 return Response({
-                    "details": "That cannot delete that reply.",
+                    "detail": "That cannot delete that reply.",
                 }, status=status.HTTP_403_FORBIDDEN)
         except Reply.DoesNotExist:
             return Response({
-                "details": "That reply was not found.",
+                "detail": "That reply was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
 class ViewBookmarks(APIView):
     def get(self, request):
         user = User.objects.get(email=request.user)
-        if 'offset' in request.data and 'limit' in request.data:
-            offset = int(request.data.get('offset'))
-            limit = int(request.data.get('limit'))
-            bookmarks = Bookmark.objects.filter(user_that_bookmarked__pk=user.id)[offset:offset+limit]
-        else:
-            bookmarks = Bookmark.objects.filter(user_that_bookmarked__pk=user.id)
-        response_list = list()
-        for bookmark in bookmarks:
-            post_author = model_to_dict(bookmark.bookmarked_post.post_author, fields=['first_name', 'last_name', 'username', 'email'])
-            if 'https' in bookmark.bookmarked_post.post_author.profile.avatar.url:
-                post_author.update({'user_avatar': get_avatar_url('https://', bookmark.bookmarked_post.post_author.profile.avatar.url)})
-            elif 'http' in bookmark.bookmarked_post.post_author.profile.avatar.url:
-                post_author.update({'user_avatar': get_avatar_url('http://', bookmark.bookmarked_post.post_author.profile.avatar.url)})
-            else:
-                post_author.update({'user_avatar': settings.DOMAIN_URL + bookmark.bookmarked_post.post_author.profile.avatar.url})
-            reply = {
-                'resource_key': bookmark.resource_key,
-                'bookmarked_post': {
-                    'slug': bookmark.bookmarked_post.slug,
-                    'post_heading': bookmark.bookmarked_post.post_heading,
-                    "post_heading_image": settings.DOMAIN_URL + bookmark.bookmarked_post.post_heading_image.url,
-                    "post_body_preview": bookmark.bookmarked_post.post_body[:100] + "...",
-                    'post_author': post_author,
-                    "tags": bookmark.bookmarked_post.tags.all().values('tag_name'),
-                    "read_duration": bookmark.bookmarked_post.read_duration,
-                    'date_published':bookmark.bookmarked_post.date_published,
-                    "comments_count": bookmark.bookmarked_post.comments.all().count(),
-                    "ratings_count": bookmark.bookmarked_post.ratings.filter(rating=True).count(),
-                },
-                'date_bookmarked': bookmark.date_bookmarked,
-            }
-            response_list.append(reply)
-        return Response(response_list)
+        bookmarks = Bookmark.objects.filter(user_that_bookmarked__pk=user.id)
+        paginator = LimitOffsetPaginationWithDefault()
+        context = paginator.paginate_queryset(bookmarks, request)
+        serializer = BookmarkSerializer(context, many=True)
+        return paginator.get_paginated_response(serializer.data)
+        
 
 class CreateBookmark(APIView):
     def post(self, request, slug):
@@ -562,12 +455,14 @@ class CreateBookmark(APIView):
             bookmark = Bookmark.objects.create(user_that_bookmarked=user, bookmarked_post=post, resource_key=get_resource_key(Bookmark))
             assign_perm('posts.change_bookmark', user, bookmark)
             assign_perm('posts.delete_bookmark', user, bookmark)
+            serializer = BookmarkSerializer(instance=bookmark)
             return Response({
-                    "details": "Your bookmark was created.",
-                })
+                "detail": "Your bookmark was created successfully.",
+                "bookmark": serializer.data,
+            })
         except Post.DoesNotExist:
             return Response({
-                "details": "That post was not found.",
+                "detail": "That post was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
 class DeleteBookmark(APIView):
@@ -579,14 +474,14 @@ class DeleteBookmark(APIView):
                 bookmark.archived = True
                 bookmark.save()
                 return Response({
-                    "details": "Your bookmark was deleted.",
+                    "detail": "Your bookmark was deleted.",
                 })
             else:
                 return Response({
-                    "details": "That cannot delete that bookmark.",
+                    "detail": "That cannot delete that bookmark.",
                 }, status=status.HTTP_403_FORBIDDEN)
         except Bookmark.DoesNotExist:
             return Response({
-                "details": "That bookmark was not found.",
+                "detail": "That bookmark was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 

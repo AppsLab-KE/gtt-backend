@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.urls import path
 from .apis import (
-    ViewPost, ViewRatedPosts, ViewTagPosts, ViewRecommendedPosts, CreatePost, UpdatePost, DeletePost, RatePost,
+    ViewPost, ViewRatedPosts, ViewTagPosts, ViewRecommendedPosts, SearchPosts, CreatePost, UpdatePost, DeletePost, RatePost,
     ViewComments, CreateComment, UpdateComment, DeleteComment,
     ViewReplies, CreateReply, UpdateReply, DeleteReply,
     ViewBookmarks, CreateBookmark, DeleteBookmark,
@@ -12,6 +12,7 @@ urlpatterns = [
     path(settings.API + "posts/rated", ViewRatedPosts.as_view(), name='view_rated_posts'),
     path(settings.API + "posts/tags/<slug:tag_name>", ViewTagPosts.as_view(), name='view_tag_posts'),
     path(settings.API + "posts/recommendations", ViewRecommendedPosts.as_view(), name='view_recommended_posts'),
+    path(settings.API + "posts/", SearchPosts.as_view(), name='search_posts'),
     path(settings.API + "posts/create", CreatePost.as_view(), name='create_post'),
     path(settings.API + "posts/<slug:slug>/update", UpdatePost.as_view(), name='update_post'),
     path(settings.API + "posts/<slug:slug>/delete", DeletePost.as_view(), name='delete_post'),
