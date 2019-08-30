@@ -117,16 +117,6 @@ CORS_ORIGIN_ALLOW_ALL = True
 #    )
 #}
 
-#DATABASES = {
-#    'default': {
-#       'ENGINE': 'django.db.backends.mysql',
-#        'NAME': 'gtt',
-#        'USER': 'gtt_user',
-#        'PASSWORD': '@Heart0fTec#',
-#        'HOST': 'localhost',
-#        'PORT': '',
-#    }
-#}
 
 DATABASES = {
     'default': {
