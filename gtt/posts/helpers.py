@@ -19,7 +19,23 @@ from .models import (
 
 User = get_user_model()
 
-gtt_app = Application.objects.get(name='Geeks Talk Thursday')
+def get_first_user():
+    users = User.objects.all()
+    return users[0]
+
+def get_app():
+    try:
+        gtt_app = Application.objects.get(name='Geeks Talk Thursday')
+        return gtt_app
+    except Application.DoesNotExist:
+        gtt_app = Application.objects.create(
+            name = 'Geeks Talk Thursday',
+            redirect_uris = settings.DOMAIN_URL,
+            user = get_first_user(),
+            client_type = Application.CLIENT_CONFIDENTIAL,
+            authorization_grant_type = Application.GRANT_PASSWORD,
+        )
+        return gtt_app
 
 def get_random_token(length):
     token = str()
@@ -60,6 +76,7 @@ def get_avatar_url(scheme, quoted_url):
     return scheme + urllib.parse.unquote(matched_url)
 
 def get_bitbucket_access_token(code, redirect_uri):
+    gtt_app = get_app()
     client_id = settings.SOCIAL_AUTH_BITBUCKET_OAUTH2_KEY
     client_secret = settings.SOCIAL_AUTH_BITBUCKET_OAUTH2_SECRET
     data = {
@@ -77,6 +94,7 @@ def get_bitbucket_access_token(code, redirect_uri):
     #print(convert_response)
 
 def get_github_access_token(code):
+    gtt_app = get_app()
     client_id = settings.SOCIAL_AUTH_GITHUB_KEY
     client_secret = settings.SOCIAL_AUTH_GITHUB_SECRET
     data = {
@@ -105,16 +123,16 @@ def get_gitlab_access_token(code):
     return response.json()
 
 def get_password_querydict(username, password):
+    gtt_app = get_app()
     return QueryDict('grant_type=password&client_id=' + gtt_app.client_id + '&client_secret=' + gtt_app.client_secret + '&username=' + username + '&password=' + password)
 
 def get_token_querydict(refresh_token):
+    gtt_app = get_app()
     return QueryDict('grant_type=refresh_token&client_id=' + gtt_app.client_id + '&client_secret=' + gtt_app.client_secret + '&refresh_token=' + refresh_token)
 
 def get_revoke_token_querydict(token):
+    gtt_app = get_app()
     return QueryDict('client_id=' + gtt_app.client_id + '&client_secret=' + gtt_app.client_secret + '&token=' + token)
-
-def get_app():
-    return gtt_app
 
 def user_confirmation_token():
     token = str()
