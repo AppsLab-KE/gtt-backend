@@ -41,8 +41,9 @@ class Post(models.Model):
     objects = ArchivedManager()
 
     def get_absolute_url(self):
+        post_author = User.objects.get(posts__slug=self.slug)
         from django.urls import reverse
-        return reverse('view_post', kwargs={'slug': self.slug})
+        return reverse('posts:view_post', kwargs={'username': post_author.username, 'slug': self.slug})
 
 class Comment(models.Model):
     commented_post = models.ForeignKey("Post", related_name='comments', null=True, on_delete=models.SET_NULL)

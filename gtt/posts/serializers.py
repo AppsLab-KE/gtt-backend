@@ -1,3 +1,4 @@
+from datetime import datetime
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
@@ -5,6 +6,15 @@ from .models import Post, Comment, Reply, Bookmark, Rating
 from .helpers import get_avatar_url
 
 User = get_user_model()
+
+class Event:
+    content_shared = 'CONTENT_SHARED'
+    viewed =  'VIEW'
+    liked = 'LIKE'
+    commented = 'COMMENT'
+    bookmarked = 'BOOKMARK'
+
+event = Event()
 
 class UserSerializer(serializers.ModelSerializer):
     user_avatar = serializers.SerializerMethodField()
@@ -102,20 +112,152 @@ class BookmarkSerializer(serializers.ModelSerializer):
             'date_bookmarked',
         )
 
-class RatingSerializer(serializers.ModelSerializer):
-    user_id = serializers.SerializerMethodField()
-    post_id = serializers.SerializerMethodField()
+class RecommenderPostSerializer(serializers.ModelSerializer):
+    timestamp = serializers.SerializerMethodField()
+    eventType = serializers.SerializerMethodField()
+    contentId = serializers.SerializerMethodField()
+    authorPersonId = serializers.SerializerMethodField()
+    url = serializers.SerializerMethodField()
+    title = serializers.SerializerMethodField()
+    text = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Post
+        fields = (
+            'timestamp',
+            'eventType',
+            'contentId',
+            'authorPersonId',
+            'url',
+            'title',
+            'text'
+        )
+
+    def get_timestamp(self, obj):
+        return datetime.timestamp(obj.date_published)
+
+    def get_eventType(self, obj):
+        return event.content_shared
+
+    def get_contentId(self, obj):
+        return obj.id
+
+    def get_authorPersonId(self, obj):
+        return obj.post_author.id
+
+    def get_url(self, obj):
+        return settings.DOMAIN_URL + obj.get_absolute_url()
+
+    def get_title(self, obj):
+        return obj.post_heading
+
+    def get_text(self, obj):
+        return obj.post_body
+
+class ViewedSerializer(serializers.ModelSerializer):
+    timestamp = serializers.SerializerMethodField()
+    eventType = serializers.SerializerMethodField()
+    contentId = serializers.SerializerMethodField()
+    personId = serializers.SerializerMethodField()
 
     class Meta:
         model = Rating
         fields = (
-            'user_id',
-            'post_id',
-            'rating',
+            'timestamp',
+            'eventType',
+            'contentId',
+            'personId',
         )
 
-    def get_user_id(self, obj):
+    def get_timestamp(self, obj):
+        return datetime.timestamp(obj.date_rated)
+
+    def get_eventType(self, obj):
+        return event.viewed
+
+    def get_contentId(self, obj):
+        return obj.rated_post.id
+
+    def get_personId(self, obj):
         return obj.user_that_rated.id
 
-    def get_post_id(self, obj):
+class LikedSerializer(serializers.ModelSerializer):
+    timestamp = serializers.SerializerMethodField()
+    eventType = serializers.SerializerMethodField()
+    contentId = serializers.SerializerMethodField()
+    personId = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Rating
+        fields = (
+            'timestamp',
+            'eventType',
+            'contentId',
+            'personId',
+        )
+    
+    def get_timestamp(self, obj):
+        return datetime.timestamp(obj.date_rated)
+
+    def get_eventType(self, obj):
+        return event.liked
+
+    def get_contentId(self, obj):
         return obj.rated_post.id
+
+    def get_personId(self, obj):
+        return obj.user_that_rated.id
+
+class CommentedSerializer(serializers.ModelSerializer):
+    timestamp = serializers.SerializerMethodField()
+    eventType = serializers.SerializerMethodField()
+    contentId = serializers.SerializerMethodField()
+    personId = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Comment
+        fields = (
+            'timestamp',
+            'eventType',
+            'contentId',
+            'personId',
+        )
+
+    def get_timestamp(self, obj):
+        return datetime.timestamp(obj.date_commented)
+
+    def get_eventType(self, obj):
+        return event.commented
+
+    def get_contentId(self, obj):
+        return obj.commented_post.id
+
+    def get_personId(self, obj):
+        return obj.user_that_commented.id
+    
+class BookmarkedSerializer(serializers.ModelSerializer):
+    timestamp = serializers.SerializerMethodField()
+    eventType = serializers.SerializerMethodField()
+    contentId = serializers.SerializerMethodField()
+    personId = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Bookmark
+        fields = (
+            'timestamp',
+            'eventType',
+            'contentId',
+            'personId',
+        )
+
+    def get_timestamp(self, obj):
+        return datetime.timestamp(obj.date_bookmarked)
+
+    def get_eventType(self, obj):
+        return event.bookmarked
+
+    def get_contentId(self, obj):
+        return obj.bookmarked_post.id
+
+    def get_personId(self, obj):
+        return obj.user_that_bookmarked.id

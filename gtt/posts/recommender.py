@@ -1,23 +1,30 @@
-import numpy as np
-from lightfm import LightFM
 from django.db.models import Q
-from posts.models import Post, Rating
-from posts.serializers import PostSerializer, RatingSerializer
+from posts.models import Post, Rating, Comment, Bookmark
+from posts.serializers import (
+    RecommenderPostSerializer, ViewedSerializer, LikedSerializer, CommentedSerializer, BookmarkedSerializer,
+)
 
 class PostRecommender:
 
     def get_data(self):
-        ratings = Rating.objects.all()
         posts = Post.objects.filter(Q(ratings__rating=True)|Q(ratings__rating=False))
-        rating_serializer = RatingSerializer(ratings, many=True)
-        post_serializer = PostSerializer(posts, many=True)
+        post_serializer = RecommenderPostSerializer(posts, many=True)
+        all_ratings = Rating.objects.all()
+        viewed_serializer = ViewedSerializer(all_ratings, many=True)
+        true_ratings = Rating.objects.filter(rating=True)
+        liked_serializer = LikedSerializer(true_ratings, many=True)
+        all_comments = Comment.objects.all()
+        commented_serializer = CommentedSerializer(all_comments, many=True)
+        all_bookmarks = Bookmark.objects.all()
+        bookmarked_serializer = BookmarkedSerializer(all_bookmarks, many=True)
+        user_interactions = viewed_serializer.data + liked_serializer.data + commented_serializer.data + bookmarked_serializer.data
         return (
-            rating_serializer.data,
-            post_serializer.data
+            post_serializer.data,
+            user_interactions
         )
 
-    def get_ratings(self):
+    def get_shared_posts(self):
         return self.get_data()[0]
 
-    def get_post_features(self):
+    def get_user_interactions(self):
         return self.get_data()[1]
