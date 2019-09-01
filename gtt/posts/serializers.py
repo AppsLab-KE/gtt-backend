@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import Post, Comment, Reply, Bookmark
+from .models import Post, Comment, Reply, Bookmark, Rating
 from .helpers import get_avatar_url
 
 User = get_user_model()
@@ -101,3 +101,21 @@ class BookmarkSerializer(serializers.ModelSerializer):
             'bookmarked_post',
             'date_bookmarked',
         )
+
+class RatingSerializer(serializers.ModelSerializer):
+    user_id = serializers.SerializerMethodField()
+    post_id = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Rating
+        fields = (
+            'user_id',
+            'post_id',
+            'rating',
+        )
+
+    def get_user_id(self, obj):
+        return obj.user_that_rated.id
+
+    def get_post_id(self, obj):
+        return obj.rated_post.id
