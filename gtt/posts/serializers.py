@@ -8,7 +8,7 @@ from .helpers import get_avatar_url
 User = get_user_model()
 
 class Event:
-    content_shared = 'CONTENT_SHARED'
+    content_shared = 'CONTENT SHARED'
     viewed =  'VIEW'
     liked = 'LIKE'
     commented = 'COMMENT'
@@ -117,7 +117,6 @@ class RecommenderPostSerializer(serializers.ModelSerializer):
     eventType = serializers.SerializerMethodField()
     contentId = serializers.SerializerMethodField()
     authorPersonId = serializers.SerializerMethodField()
-    url = serializers.SerializerMethodField()
     title = serializers.SerializerMethodField()
     text = serializers.SerializerMethodField()
 
@@ -128,7 +127,6 @@ class RecommenderPostSerializer(serializers.ModelSerializer):
             'eventType',
             'contentId',
             'authorPersonId',
-            'url',
             'title',
             'text'
         )
@@ -144,9 +142,6 @@ class RecommenderPostSerializer(serializers.ModelSerializer):
 
     def get_authorPersonId(self, obj):
         return obj.post_author.id
-
-    def get_url(self, obj):
-        return settings.DOMAIN_URL + obj.get_absolute_url()
 
     def get_title(self, obj):
         return obj.post_heading

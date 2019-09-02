@@ -19,6 +19,7 @@ from .serializers import (
 from .models import (
     Tag, Post, Comment, Reply, Rating, Bookmark,
 )
+from .recommender import get_popular_posts, get_recommended_posts
 from .helpers import *
 
 User = get_user_model()
@@ -68,11 +69,29 @@ class ViewTagPosts(APIView):
 class ViewPopularPosts(APIView):
     permission_classes = []
     def get(self, request):
-        pass
+        top_n = request.GET.get('top_n', 10)
+        print(top_n)
+        popular_posts = get_popular_posts(topn=int(top_n))
+        paginator = LimitOffsetPaginationWithDefault()
+        context = paginator.paginate_queryset(popular_posts, request)
+        serializer = PostSerializer(context, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 class ViewRecommendedPosts(APIView):
     def get(self, request):
-        pass
+        top_n = request.GET.get('top_n', 10)
+        print(top_n)
+        user = User.objects.get(email=request.user)
+        try:
+            popular_posts = get_recommended_posts(user_id=user.id, topn=int(top_n))
+            paginator = LimitOffsetPaginationWithDefault()
+            context = paginator.paginate_queryset(popular_posts, request)
+            serializer = PostSerializer(context, many=True)
+            return paginator.get_paginated_response(serializer.data)
+        except KeyError:
+            return Response({
+                "detail": "Sorry. No recommendations available for you.",
+            }, status=status.HTTP_204_NO_CONTENT)
 
 class SearchPosts(generics.ListCreateAPIView):
     permission_classes = []

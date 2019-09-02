@@ -49,6 +49,9 @@ django = "*"
 numpy = "*"
 lightfm = "*"
 sklearn = "*"
+pandas = "*"
+scipy = "*"
+nltk = "*"
 
 [requires]
 python_version = "3.7"
