@@ -4,6 +4,7 @@ import pandas as pd
 import math
 import random
 import sklearn
+import _pickle as pickle
 import nltk
 nltk.download('stopwords')
 from nltk.corpus import stopwords
@@ -390,18 +391,45 @@ class HybridRecommender:
 
         return recommendations_df
 
-def get_popular_posts(topn):
-    popularity_model = PopularityRecommender()
-    contentIds = popularity_model.recommend_items(topn=topn, verbose=True)["contentId"].tolist()
-    posts = Post.objects.filter(pk__in=contentIds)
-    return posts
+
+class PostRecommender:
+
+    def __init__(self):
+        try:
+            with open('popularity_model.pickle', 'rb') as p:
+                self.popularity_model = pickle.load(p)
+            with open('content_based_model.pickle', 'rb') as p:
+                self.content_based_recommender_model = pickle.load(p)
+            with open('cf_recommender_model.pickle', 'rb') as p:
+                self.cf_recommender_model = pickle.load(p)
+            with open('hybrid_recommender_model.pickle', 'rb') as p:
+                self.hybrid_recommender_model = pickle.load(p)
+        except FileNotFoundError:
+            self.pickle_recommenders()
 
 
-def get_recommended_posts(user_id, topn):
-    content_based_recommender_model = ContentBasedRecommender()
-    cf_recommender_model = CFRecommender()
-    hybrid_recommender_model = HybridRecommender(content_based_recommender_model, cf_recommender_model)
-    contentIds = hybrid_recommender_model.recommend_items(user_id, topn=topn, verbose=True)["contentId"].tolist()
-    posts = Post.objects.filter(pk__in=contentIds)
-    return posts
+    def pickle_recommenders(self):
+        self.popularity_model = PopularityRecommender()
+        self.content_based_recommender_model = ContentBasedRecommender()
+        self.cf_recommender_model = CFRecommender()
+        self.hybrid_recommender_model = HybridRecommender(self.content_based_recommender_model, self.cf_recommender_model)
+        
+        with open('popularity_model.pickle', 'wb') as p:
+            pickle.dump(self.popularity_model, p)
+        with open('content_based_model.pickle', 'wb') as p:
+            pickle.dump(self.content_based_recommender_model, p)
+        with open('cf_recommender_model.pickle', 'wb') as p:
+            pickle.dump(self.cf_recommender_model, p)
+        with open('hybrid_recommender_model.pickle', 'wb') as p:
+            pickle.dump(self.hybrid_recommender_model, p)
+
+    def get_popular_posts(self, topn):
+        contentIds = self.popularity_model.recommend_items(topn=topn, verbose=True)["contentId"].tolist()
+        posts = Post.objects.filter(pk__in=contentIds)
+        return posts
+
+    def get_recommended_posts(self, user_id, topn):
+        contentIds = self.hybrid_recommender_model.recommend_items(user_id, topn=topn, verbose=True)["contentId"].tolist()
+        posts = Post.objects.filter(pk__in=contentIds)
+        return posts
 

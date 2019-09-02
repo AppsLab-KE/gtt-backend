@@ -13,6 +13,7 @@ gtt/media/profile_avatars/*
 # Editor directories and files
 .history
 .vscode
+*.pickle
 *.sqlite3
 *.suo
 *.ntvs*

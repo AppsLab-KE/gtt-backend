@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "5bcbf48a578422147682a94d68ee1255a3f9089733fb229ad2bf9792dd26dbbe"
+            "sha256": "5eb44fea8212969772386626e8ee5c89f133873cdbdc7e99c4e1b0d4a8293061"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -195,13 +195,6 @@
             ],
             "index": "pypi",
             "version": "==1.4.1"
-        },
-        "lightfm": {
-            "hashes": [
-                "sha256:7dc3fd48f0ef32c7e8de8e38b2bbe7063b56b570c702453d7467b43b413f6806"
-            ],
-            "index": "pypi",
-            "version": "==1.15"
         },
         "mccabe": {
             "hashes": [

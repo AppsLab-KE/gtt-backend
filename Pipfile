@@ -47,11 +47,11 @@ wrapt = "==1.11.2"
 Pillow = "==6.1.0"
 django = "*"
 numpy = "*"
-lightfm = "*"
 sklearn = "*"
 pandas = "*"
 scipy = "*"
 nltk = "*"
+cpickle = "*"
 
 [requires]
 python_version = "3.7"

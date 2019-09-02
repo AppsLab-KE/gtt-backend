@@ -19,10 +19,11 @@ from .serializers import (
 from .models import (
     Tag, Post, Comment, Reply, Rating, Bookmark,
 )
-from .recommender import get_popular_posts, get_recommended_posts
+from .recommender import PostRecommender
 from .helpers import *
 
 User = get_user_model()
+recommender = PostRecommender()
 
 class ViewPost(APIView):
     permission_classes = []
@@ -70,8 +71,7 @@ class ViewPopularPosts(APIView):
     permission_classes = []
     def get(self, request):
         top_n = request.GET.get('top_n', 10)
-        print(top_n)
-        popular_posts = get_popular_posts(topn=int(top_n))
+        popular_posts = recommender.get_popular_posts(topn=int(top_n))
         paginator = LimitOffsetPaginationWithDefault()
         context = paginator.paginate_queryset(popular_posts, request)
         serializer = PostSerializer(context, many=True)
@@ -80,10 +80,9 @@ class ViewPopularPosts(APIView):
 class ViewRecommendedPosts(APIView):
     def get(self, request):
         top_n = request.GET.get('top_n', 10)
-        print(top_n)
         user = User.objects.get(email=request.user)
         try:
-            popular_posts = get_recommended_posts(user_id=user.id, topn=int(top_n))
+            popular_posts = recommender.get_recommended_posts(user_id=user.id, topn=int(top_n))
             paginator = LimitOffsetPaginationWithDefault()
             context = paginator.paginate_queryset(popular_posts, request)
             serializer = PostSerializer(context, many=True)
