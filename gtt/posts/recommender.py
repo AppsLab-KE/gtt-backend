@@ -22,6 +22,8 @@ from posts.serializers import (
 EVAL_RANDOM_SAMPLE_NON_INTERACTED_ITEMS = 100
 
 class Dataset:
+    post_columns = ['timestamp', 'eventType', 'contentId', 'authorPersonId', 'title', 'text']
+    interaction_columns = ['timestamp', 'eventType', 'contentId', 'personId']
 
     def __init__(self):
         posts = Post.objects.filter(Q(ratings__rating=True)|Q(ratings__rating=False))
@@ -45,8 +47,8 @@ class Dataset:
         return self.__user_interactions
 
     def get_dataframes(self):
-        shared_posts_df = pd.DataFrame(self.__shared_posts, columns=self.__shared_posts[0].keys())
-        user_interactions_df = pd.DataFrame(self.__user_interactions, columns=self.__user_interactions[0].keys())
+        shared_posts_df = pd.DataFrame(self.__shared_posts, columns=self.post_columns)
+        user_interactions_df = pd.DataFrame(self.__user_interactions, columns=self.interaction_columns)    
         return (
             shared_posts_df,
             user_interactions_df
@@ -193,8 +195,6 @@ class ModelEvaluator:
                           'recall@5': global_recall_at_5,
                           'recall@10': global_recall_at_10}    
         return global_metrics, detailed_results_df
-    
-model_evaluator = ModelEvaluator()
 
 class PopularityRecommender:
     
@@ -394,7 +394,16 @@ class HybridRecommender:
 
 class PostRecommender:
 
-    def __init__(self):
+    def checksetUp(self):
+        dataset = Dataset()
+        shared_posts = dataset.get_shared_posts()
+        user_interactions = dataset.get_user_interactions()
+        if bool(len(shared_posts)) and bool(len(user_interactions)):
+            return True
+        else:
+            return False
+
+    def setUp(self):
         try:
             with open('popularity_model.pickle', 'rb') as p:
                 self.popularity_model = pickle.load(p)
