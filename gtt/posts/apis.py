@@ -74,13 +74,18 @@ class ViewPopularPosts(APIView):
         if recommender.checksetUp():
             recommender.setUp()
             popular_posts = recommender.get_popular_posts(topn=int(top_n))
-            paginator = LimitOffsetPaginationWithDefault()
-            context = paginator.paginate_queryset(popular_posts, request)
-            serializer = PostSerializer(context, many=True)
-            return paginator.get_paginated_response(serializer.data)
+            if popular_posts.exists():
+                paginator = LimitOffsetPaginationWithDefault()
+                context = paginator.paginate_queryset(popular_posts, request)
+                serializer = PostSerializer(context, many=True)
+                return paginator.get_paginated_response(serializer.data)
+            else:
+                return Response({
+                    "detail": "Sorry. No popular posts available for you yet.",
+                }, status=status.HTTP_204_NO_CONTENT)
         else:
             return Response({
-                "detail": "Sorry. No popular posts available for you.",
+                "detail": "Sorry. No popular posts available for you yet.",
             }, status=status.HTTP_204_NO_CONTENT)
 
 class ViewRecommendedPosts(APIView):
@@ -90,18 +95,23 @@ class ViewRecommendedPosts(APIView):
         if recommender.checksetUp():
             recommender.setUp()
             try:
-                popular_posts = recommender.get_recommended_posts(user_id=user.id, topn=int(top_n))
-                paginator = LimitOffsetPaginationWithDefault()
-                context = paginator.paginate_queryset(popular_posts, request)
-                serializer = PostSerializer(context, many=True)
-                return paginator.get_paginated_response(serializer.data)
+                recommended_posts = recommender.get_recommended_posts(user_id=user.id, topn=int(top_n))
+                if recommended_posts.exists():
+                    paginator = LimitOffsetPaginationWithDefault()
+                    context = paginator.paginate_queryset(recommended_posts, request)
+                    serializer = PostSerializer(context, many=True)
+                    return paginator.get_paginated_response(serializer.data)
+                else:
+                    return Response({
+                        "detail": "Sorry. No recommendations available for you yet.",
+                    }, status=status.HTTP_204_NO_CONTENT)
             except KeyError:
                 return Response({
-                    "detail": "Sorry. No recommendations available for you.",
+                    "detail": "Sorry. No recommendations available for you yet.",
                 }, status=status.HTTP_204_NO_CONTENT)
         else:
             return Response({
-                "detail": "Sorry. No recommendations available for you.",
+                "detail": "Sorry. No recommendations available for you yet.",
             }, status=status.HTTP_204_NO_CONTENT)
 
 class SearchPosts(generics.ListCreateAPIView):

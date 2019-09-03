@@ -20,6 +20,7 @@ from posts.serializers import (
 
 #Top-N accuracy metrics consts
 EVAL_RANDOM_SAMPLE_NON_INTERACTED_ITEMS = 100
+USER_INTERACTIONS_COUNT = 5
 
 class Dataset:
     post_columns = ['timestamp', 'eventType', 'contentId', 'authorPersonId', 'title', 'text']
@@ -68,7 +69,7 @@ class Dataset:
         user_interactions_df['eventStrength'] = user_interactions_df['eventType'].apply(lambda x: event_type_strength[x])
         users_interactions_count_df = user_interactions_df.groupby(['personId', 'contentId']).size().groupby('personId').size()
         #print('# users: %d' % len(users_interactions_count_df))
-        users_with_enough_interactions_df = users_interactions_count_df[users_interactions_count_df >= 3].reset_index()[['personId']]
+        users_with_enough_interactions_df = users_interactions_count_df[users_interactions_count_df >= USER_INTERACTIONS_COUNT].reset_index()[['personId']]
         #print('# users with at least 5 interactions: %d' % len(users_with_enough_interactions_df))
         #print('# of interactions: %d' % len(user_interactions_df))
         interactions_from_selected_users_df = user_interactions_df.merge(users_with_enough_interactions_df, 
@@ -397,8 +398,9 @@ class PostRecommender:
     def checksetUp(self):
         dataset = Dataset()
         shared_posts = dataset.get_shared_posts()
-        user_interactions = dataset.get_user_interactions()
-        if bool(len(shared_posts)) and bool(len(user_interactions)):
+        shared_posts_df, user_interactions_df = dataset.get_dataframes()
+        users_interactions_count_df = user_interactions_df.groupby(['personId', 'contentId']).size().groupby('personId').size()
+        if bool(len(shared_posts)) and len(users_interactions_count_df) >= USER_INTERACTIONS_COUNT:
             return True
         else:
             return False
