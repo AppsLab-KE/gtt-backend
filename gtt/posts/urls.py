@@ -10,8 +10,8 @@ from .apis import (
 urlpatterns = [
     path(settings.API + "posts/@<username>/<slug:slug>", ViewPost.as_view(), name='view_post'),
     path(settings.API + "posts/rated", ViewRatedPosts.as_view(), name='view_rated_posts'),
-    path(settings.API + "posts/tags/<slug:tag_name>", ViewTagPosts.as_view(), name='view_tag_posts'),
-    path(settings.API + "posts/categories/<slug:tag_name>", ViewCategoryPosts.as_view(), name='view_category_posts'),
+    path(settings.API + "posts/tags/<slug:tag_slug>", ViewTagPosts.as_view(), name='view_tag_posts'),
+    path(settings.API + "posts/categories/<slug:category_slug>", ViewCategoryPosts.as_view(), name='view_category_posts'),
     path(settings.API + "posts/tags", ViewTags.as_view(), name='view_tags'),
     path(settings.API + "posts/categories", ViewCategories.as_view(), name='view_categories'),
     path(settings.API + "posts/popular", ViewPopularPosts.as_view(), name='view_popular_posts'),

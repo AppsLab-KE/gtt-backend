@@ -72,9 +72,9 @@ class ViewRatedPosts(APIView):
 
 class ViewTagPosts(APIView):
     permission_classes = []
-    def get(self, request, tag_name):
+    def get(self, request, tag_slug):
         try:
-            tag = Tag.objects.get(tag_name__iexact=tag_name)
+            tag = Tag.objects.get(slug=tag_slug)
             tag_posts = tag.posts.all()
             paginator = LimitOffsetPaginationWithDefault()
             context = paginator.paginate_queryset(tag_posts, request)
@@ -87,9 +87,9 @@ class ViewTagPosts(APIView):
 
 class ViewCategoryPosts(APIView):
     permission_classes = []
-    def get(self, request, slug):
+    def get(self, request, category_slug):
         try:
-            category = Category.objects.get(slug=slug)
+            category = Category.objects.get(slug=category_slug)
             category_posts = category.posts.all()
             paginator = LimitOffsetPaginationWithDefault()
             context = paginator.paginate_queryset(category_posts, request)
