@@ -2,7 +2,7 @@ from datetime import datetime
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import Post, Comment, Reply, Bookmark, Rating
+from .models import Category, Tag, Post, Comment, Reply, Bookmark, Rating
 from .helpers import get_avatar_url
 
 User = get_user_model()
@@ -15,6 +15,24 @@ class Event:
     bookmarked = 'BOOKMARK'
 
 event = Event()
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = (
+            'tag_name',
+            'slug',
+            'date_added',
+        )
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = (
+            'category_name',
+            'slug',
+            'date_added',
+        )
 
 class UserSerializer(serializers.ModelSerializer):
     user_avatar = serializers.SerializerMethodField()
@@ -67,6 +85,7 @@ class PostSerializer(serializers.ModelSerializer):
     post_heading_image = serializers.SerializerMethodField()
     post_body_preview = serializers.SerializerMethodField()
     post_author = UserSerializer(read_only=True)
+    categories = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
     comments_count = serializers.SerializerMethodField()
     ratings_count = serializers.SerializerMethodField()
@@ -79,6 +98,7 @@ class PostSerializer(serializers.ModelSerializer):
             'post_heading_image',
             'post_body_preview',
             'post_author',
+            'categories',
             'tags',
             'read_duration',
             'date_published',
@@ -92,8 +112,11 @@ class PostSerializer(serializers.ModelSerializer):
     def get_post_body_preview(self, obj):
         return obj.post_body[:100] + "..."
 
+    def get_categories(self, obj):
+        return obj.categories.all().values('category_name'),
+
     def get_tags(self, obj):
-        return obj.tags.all().values('tag_name'),
+        return obj.tags.all().values('tag_name')
 
     def get_comments_count(self, obj):
         return obj.comments.count()

@@ -1,6 +1,6 @@
 from django import forms
 from .models import (
-    Post, Rating, Comment, Reply, Bookmark,
+    Category, Post, Rating, Comment, Reply, Bookmark,
 )
 
 class PostForm(forms.ModelForm):
@@ -11,7 +11,13 @@ class PostForm(forms.ModelForm):
             'post_heading_image',
             'post_body',
             'read_duration',
-            'slug',
+        )
+
+class CategoryForm(forms.ModelForm):
+    class Meta:
+        model = Category
+        fields = (
+            'category_name',
         )
 
 class RatingForm(forms.ModelForm):

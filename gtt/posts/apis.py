@@ -9,21 +9,39 @@ from guardian.shortcuts import assign_perm
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.forms.models import model_to_dict
-from django.utils.text import slugify
 from .forms import (
     PostForm, RatingForm, CommentForm, ReplyForm,
 )
 from .serializers import (
-    CommentSerializer, ReplySerializer, PostSerializer, BookmarkSerializer,
+    CategorySerializer, TagSerializer, CommentSerializer, ReplySerializer,
+    PostSerializer, BookmarkSerializer,
 )
 from .models import (
-    Tag, Post, Comment, Reply, Rating, Bookmark,
+    Category, Tag, Post, Comment, Reply, Rating, Bookmark,
 )
 from .recommender import PostRecommender
 from .helpers import *
 
 User = get_user_model()
 recommender = PostRecommender()
+
+class ViewTags(APIView):
+    permission_classes = []
+    def get(self, request):
+        tags = Tag.objects.all()
+        paginator = LimitOffsetPaginationWithDefault()
+        context = paginator.paginate_queryset(tags, request)
+        serializer = TagSerializer(context, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+class ViewCategories(APIView):
+    permission_classes = []
+    def get(self, request):
+        categories = Category.objects.all()
+        paginator = LimitOffsetPaginationWithDefault()
+        context = paginator.paginate_queryset(categories, request)
+        serializer = CategorySerializer(context, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 class ViewPost(APIView):
     permission_classes = []
@@ -35,7 +53,7 @@ class ViewPost(APIView):
                 try:
                     Rating.objects.get(rated_post__pk=post.id, user_that_rated__pk=user.id)
                 except Rating.DoesNotExist:
-                    Rating.objects.create(rated_post=post, user_that_rated=user, resource_key=get_resource_key(Rating))
+                    Rating.objects.create(rated_post=post, user_that_rated=user)
             serializer = PostSerializer(instance=post)
             return Response(serializer.data)
         except Post.DoesNotExist:
@@ -65,6 +83,21 @@ class ViewTagPosts(APIView):
         except Tag.DoesNotExist:
             return Response({
                 "detail": "That tag was not found.",
+            }, status=status.HTTP_404_NOT_FOUND)
+
+class ViewCategoryPosts(APIView):
+    permission_classes = []
+    def get(self, request, slug):
+        try:
+            category = Category.objects.get(slug=slug)
+            category_posts = category.posts.all()
+            paginator = LimitOffsetPaginationWithDefault()
+            context = paginator.paginate_queryset(category_posts, request)
+            serializer = PostSerializer(context, many=True)
+            return paginator.get_paginated_response(serializer.data)
+        except Category.DoesNotExist:
+            return Response({
+                "detail": "That category was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
 class ViewPopularPosts(APIView):
@@ -116,17 +149,17 @@ class ViewRecommendedPosts(APIView):
 
 class SearchPosts(generics.ListCreateAPIView):
     permission_classes = []
-    search_fields = ['tags__tag_name', 'post_author__first_name', 'post_author__last_name', 'post_author__username', 'post_heading', 'post_body']
+    search_fields = ['categories__category_name', 'tags__tag_name', 'post_author__first_name', 'post_author__last_name', 'post_author__username', 'post_heading', 'post_body']
     filter_backends = (filters.SearchFilter,)
     queryset = Post.objects.all()
     serializer_class = PostSerializer
-
 
 class CreatePost(APIView):
     def post(self, request):
         post_heading = request.data.get('post_heading')
         post_body = request.data.get('post_body')
         read_duration = request.data.get("read_duration")
+        categories = request.data.getlist('category')
         tags = request.data.getlist('tag')
         user = User.objects.get(email=request.user)
         if 'post_heading_image' in request.FILES:
@@ -135,21 +168,29 @@ class CreatePost(APIView):
                     'post_heading': post_heading, 
                     'post_body': post_body, 
                     'read_duration': str(read_duration) + " min",
-                    'slug': get_slug_key(slugify(post_heading[:249])),
                     }, request.FILES)
                 if post_form.is_valid():
                     post = post_form.save()
                     post.post_author = user
-                    post.resource_key = get_resource_key(Post)
                     post.save()
                     tag_instance_list = []
+                    category_instance_list = []
+                    for category in categories:
+                        try:
+                            category = Category.objects.get(category_name__iexact=category)
+                            category_instance_list.append(category)
+                        except Category.DoesNotExist:
+                            continue
+
                     for tag in tags:
                         try:
                             tag = Tag.objects.get(tag_name__iexact=tag)
                             tag_instance_list.append(tag)
                         except Tag.DoesNotExist:
-                            tag = Tag.objects.create(tag_name=tag.capitalize(), resource_key=get_resource_key(Tag), slug=slugify(tag.capitalize()[:249]))
+                            tag = Tag.objects.create(tag_name=tag.capitalize())
                             tag_instance_list.append(tag)
+
+                    post.categories.add(*category_instance_list)
                     post.tags.add(*tag_instance_list)
                     assign_perm('posts.change_post', user, post)
                     assign_perm('posts.delete_post', user, post)
@@ -183,6 +224,7 @@ class UpdatePost(APIView):
         post_heading = request.data.get('post_heading')
         post_body = request.data.get('post_body')
         read_duration = request.data.get("read_duration")
+        categories = request.data.getlist('category')
         tags = request.data.getlist('tag')
         user = User.objects.get(email=request.user)
         try:
@@ -192,19 +234,29 @@ class UpdatePost(APIView):
                     'post_heading': post_heading, 
                     'post_body': post_body, 
                     'read_duration': str(read_duration) + " min",
-                    'slug': post.slug,
                 }, request.FILES, instance=post)
+                category_instance_list = []
                 tag_instance_list = []
                 if post_form.is_valid():
                     updated_post = post_form.save()
+                    for category in categories:
+                        try:
+                            category = Category.objects.get(category_name__iexact=category)
+                            category_instance_list.append(category)
+                        except Category.DoesNotExist:
+                            continue
+
                     for tag in tags:
                         try:
                             tag = Tag.objects.get(tag_name__iexact=tag)
                             tag_instance_list.append(tag)
                         except Tag.DoesNotExist:
-                            tag = Tag.objects.create(tag_name=tag.capitalize(), resource_key=get_resource_key(Tag), slug=slugify(tag.capitalize()))
+                            tag = Tag.objects.create(tag_name=tag.capitalize())
                             tag_instance_list.append(tag)
+
+                    updated_post.categories.clear()
                     updated_post.tags.clear()
+                    updated_post.categories.add(*category_instance_list)
                     updated_post.tags.add(*tag_instance_list)
                     serializer = PostSerializer(instance=updated_post)
                     return Response({
@@ -315,7 +367,6 @@ class CreateComment(APIView):
                 comment = comment_form.save()
                 comment.commented_post = post
                 comment.user_that_commented = user
-                comment.resource_key = get_resource_key(Comment)
                 comment.save()
                 assign_perm('posts.change_comment', user, comment)
                 assign_perm('posts.delete_comment', user, comment)
@@ -409,7 +460,6 @@ class CreateReply(APIView):
                 reply = reply_form.save()
                 reply.replied_comment = comment
                 reply.user_that_replied = user
-                reply.resource_key = get_resource_key(Reply)
                 reply.save()
                 assign_perm('posts.change_reply', user, reply)
                 assign_perm('posts.delete_reply', user, reply)
@@ -492,7 +542,7 @@ class CreateBookmark(APIView):
         user = User.objects.get(email=request.user)
         try:
             post = Post.objects.get(slug=slug)
-            bookmark = Bookmark.objects.create(user_that_bookmarked=user, bookmarked_post=post, resource_key=get_resource_key(Bookmark))
+            bookmark = Bookmark.objects.create(user_that_bookmarked=user, bookmarked_post=post)
             assign_perm('posts.change_bookmark', user, bookmark)
             assign_perm('posts.delete_bookmark', user, bookmark)
             serializer = BookmarkSerializer(instance=bookmark)

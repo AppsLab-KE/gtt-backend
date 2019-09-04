@@ -13,9 +13,7 @@ from django.contrib.auth import get_user_model
 from oauth2_provider.models import Application
 from django.http import Http404
 from django.http.request import QueryDict
-from .models import (
-    Post, Comment, Rating, Reply, Bookmark,
-)
+from django.utils.text import slugify
 
 User = get_user_model()
 
@@ -59,14 +57,21 @@ def get_resource_key(model):
             break
     return token
 
-def get_slug_key(slug):
+def get_tag_slug(instance):
+    return slugify(instance.tag_name[:249].capitalize())
+
+def get_category_slug(instance):
+    return slugify(instance.category_name[:249].capitalize())
+
+def get_slug_key(instance, model):
+    slug = slugify(instance.post_heading[:249])
     slug_token = str()
     while True:
         slug_token = slug + "-" + get_random_token(20)
         try:
-            Post.objects.get(slug=slug_token)
+            get_object_or_404(model, slug=slug_token)
             continue
-        except Post.DoesNotExist:
+        except Http404:
             break
     return slug_token
 
