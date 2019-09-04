@@ -18,7 +18,7 @@ class GetUserMiddleware(MiddlewareMixin):
             if relative_path in ['/api/v1/auth/bitbucket', '/api/v1/auth/github', '/api/v1/auth/gitlab', '/api/v1/auth/oauth2/token']:
                 try:
                     access_token = AccessToken.objects.get(token=response.data['access_token'])
-                    current_user = model_to_dict(access_token.user, fields=['first_name', 'last_name', 'username', 'email'])
+                    current_user = model_to_dict(access_token.user, fields=['first_name', 'last_name', 'username', 'email', 'bio'])
                     if 'https' in access_token.user.profile.avatar.url:
                         current_user.update({'user_avatar': get_avatar_url('https://', access_token.user.profile.avatar.url)})
                         response.data.update({'user': current_user})

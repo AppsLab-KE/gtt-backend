@@ -159,122 +159,143 @@ class CreatePost(APIView):
         post_heading = request.data.get('post_heading')
         post_body = request.data.get('post_body')
         read_duration = request.data.get("read_duration")
-        categories = request.data.getlist('category')
+        category = request.data.get('category', False)
         tags = request.data.getlist('tag')
         user = User.objects.get(email=request.user)
-        if 'post_heading_image' in request.FILES:
-            if user.has_perm('posts.add_post'):
-                post_form = PostForm({
-                    'post_heading': post_heading, 
-                    'post_body': post_body, 
-                    'read_duration': str(read_duration) + " min",
-                    }, request.FILES)
-                if post_form.is_valid():
-                    post = post_form.save()
-                    post.post_author = user
-                    post.save()
-                    tag_instance_list = []
-                    category_instance_list = []
-                    for category in categories:
+        if category:
+            if 'post_heading_image' in request.FILES:
+                if user.has_perm('posts.add_post'):
+                    post_form = PostForm({
+                        'post_heading': post_heading, 
+                        'post_body': post_body, 
+                        'read_duration': str(read_duration) + " min",
+                        }, request.FILES)
+                    if post_form.is_valid():
                         try:
-                            category = Category.objects.get(category_name__iexact=category)
-                            category_instance_list.append(category)
+                            Category.objects.get(category_name=category)
+                            post = post_form.save()
+                            post.post_author = user
+                            post.save()
+                            tag_instance_list = []
+                            for tag in tags:
+                                try:
+                                    tag = Tag.objects.get(tag_name__iexact=tag)
+                                    tag_instance_list.append(tag)
+                                except Tag.DoesNotExist:
+                                    tag = Tag.objects.create(tag_name=tag.capitalize())
+                                    tag_instance_list.append(tag)
+
+                            post.tags.add(*tag_instance_list)
+                            assign_perm('posts.change_post', user, post)
+                            assign_perm('posts.delete_post', user, post)
+                            serializer = PostSerializer(instance=post)
+                            return Response({
+                                "detail": "That post was created.",
+                                "post": serializer.data,
+                            })
                         except Category.DoesNotExist:
-                            continue
-
-                    for tag in tags:
-                        try:
-                            tag = Tag.objects.get(tag_name__iexact=tag)
-                            tag_instance_list.append(tag)
-                        except Tag.DoesNotExist:
-                            tag = Tag.objects.create(tag_name=tag.capitalize())
-                            tag_instance_list.append(tag)
-
-                    post.categories.add(*category_instance_list)
-                    post.tags.add(*tag_instance_list)
-                    assign_perm('posts.change_post', user, post)
-                    assign_perm('posts.delete_post', user, post)
-                    serializer = PostSerializer(instance=post)
-                    return Response({
-                        "detail": "That post was created.",
-                        "post": serializer.data,
-                    })
+                            return Response({
+                                "detail": "That category was not found.",
+                            }, status=status.HTTP_404_NOT_FOUND)
+                    else:
+                        return Response({
+                            "detail": json.loads(post_form.errors.as_json()),
+                        }, status=status.HTTP_400_BAD_REQUEST)
                 else:
                     return Response({
-                        "detail": json.loads(post_form.errors.as_json()),
-                    }, status=status.HTTP_400_BAD_REQUEST)
+                        "detail": "You cannot create a post.",
+                    }, status=status.HTTP_403_FORBIDDEN)
             else:
                 return Response({
-                    "detail": "You cannot create a post.",
-                }, status=status.HTTP_403_FORBIDDEN)
+                        "detail": {
+                            "post_heading_image": [
+                                {
+                                    "message": "This field is required.",
+                                    "code": "required",
+                                }
+                            ]
+                        },
+                    }, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({
-                    "detail": {
-                        "post_heading_image": [
-                            {
-                                "message": "This field is required.",
-                                "code": "required",
-                            }
-                        ]
-                    },
-                }, status=status.HTTP_400_BAD_REQUEST)
+                        "detail": {
+                            "category": [
+                                {
+                                    "message": "This field is required.",
+                                    "code": "required",
+                                }
+                            ]
+                        },
+                    }, status=status.HTTP_400_BAD_REQUEST)
 
 class UpdatePost(APIView):
     def post(self, request, slug):
         post_heading = request.data.get('post_heading')
         post_body = request.data.get('post_body')
         read_duration = request.data.get("read_duration")
-        categories = request.data.getlist('category')
+        category = request.data.get('category', False)
         tags = request.data.getlist('tag')
         user = User.objects.get(email=request.user)
-        try:
-            post = Post.objects.get(slug=slug)
-            if user.has_perm('posts.change_post', post):
-                post_form = PostForm({
-                    'post_heading': post_heading, 
-                    'post_body': post_body, 
-                    'read_duration': str(read_duration) + " min",
-                }, request.FILES, instance=post)
-                category_instance_list = []
-                tag_instance_list = []
-                if post_form.is_valid():
-                    updated_post = post_form.save()
-                    for category in categories:
+        if category:
+            try:
+                post = Post.objects.get(slug=slug)
+                if user.has_perm('posts.change_post', post):
+                    post_form = PostForm({
+                        'post_heading': post_heading, 
+                        'post_body': post_body, 
+                        'read_duration': str(read_duration) + " min",
+                    }, request.FILES, instance=post)
+                    tag_instance_list = []
+                    if post_form.is_valid():
                         try:
-                            category = Category.objects.get(category_name__iexact=category)
-                            category_instance_list.append(category)
+                            Category.objects.get(category_name=category)
+                            updated_post = post_form.save()
+                            for tag in tags:
+                                try:
+                                    tag = Tag.objects.get(tag_name__iexact=tag)
+                                    tag_instance_list.append(tag)
+                                except Tag.DoesNotExist:
+                                    tag = Tag.objects.create(tag_name=tag.capitalize())
+                                    tag_instance_list.append(tag)
+
+                            updated_post.category = None
+                            updated_post.save()
+                            updated_post.tags.clear()
+                            updated_post.category = category
+                            updated_post.save()
+                            updated_post.tags.add(*tag_instance_list)
+                            serializer = PostSerializer(instance=updated_post)
+                            return Response({
+                                "detail": "That post was updated.",
+                                "post": serializer.data,
+                            })
                         except Category.DoesNotExist:
-                            continue
-
-                    for tag in tags:
-                        try:
-                            tag = Tag.objects.get(tag_name__iexact=tag)
-                            tag_instance_list.append(tag)
-                        except Tag.DoesNotExist:
-                            tag = Tag.objects.create(tag_name=tag.capitalize())
-                            tag_instance_list.append(tag)
-
-                    updated_post.categories.clear()
-                    updated_post.tags.clear()
-                    updated_post.categories.add(*category_instance_list)
-                    updated_post.tags.add(*tag_instance_list)
-                    serializer = PostSerializer(instance=updated_post)
-                    return Response({
-                        "detail": "That post was updated.",
-                        "post": serializer.data,
-                    })
+                            return Response({
+                                "detail": "That category was not found.",
+                            }, status=status.HTTP_404_NOT_FOUND)
+                    else:
+                        return Response({
+                            "detail": json.loads(post_form.errors.as_json()),
+                        }, status=status.HTTP_400_BAD_REQUEST)
                 else:
                     return Response({
-                        "detail": json.loads(post_form.errors.as_json()),
-                    }, status=status.HTTP_400_BAD_REQUEST)
-            else:
+                        "detail": "You cannot update this post.",
+                    }, status=status.HTTP_403_FORBIDDEN)
+            except Post.DoesNotExist:
                 return Response({
-                    "detail": "You cannot update this post.",
-                }, status=status.HTTP_403_FORBIDDEN)
-        except Post.DoesNotExist:
+                    "detail": "That post was not found.",
+                }, status=status.HTTP_404_NOT_FOUND)
+        else:
             return Response({
-                "detail": "That post was not found.",
-            }, status=status.HTTP_404_NOT_FOUND)
+                        "detail": {
+                            "category": [
+                                {
+                                    "message": "This field is required.",
+                                    "code": "required",
+                                }
+                            ]
+                        },
+                    }, status=status.HTTP_400_BAD_REQUEST)
 
 class DeletePost(APIView):
     def post(self, request, slug):

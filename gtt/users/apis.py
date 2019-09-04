@@ -48,11 +48,11 @@ class RequestWritership(APIView):
         if superusers.exists():
             notify.send(sender=user, recipient=superusers, verb='make_writer', description="{} wants to become a writer.".format(user.username))
             return Response({
-                    'details': 'Your request was sent.',
+                    'detail': 'Your request was sent.',
                 })
         else:
             return Response({
-                    'details': 'Not admins were found.',
+                    'detail': 'Not admins were found.',
                 }, status=status.HTTP_404_NOT_FOUND)
 
 class MakeWriter(APIView):
@@ -64,15 +64,15 @@ class MakeWriter(APIView):
                 assign_perm('posts.add_post', group)
                 user.groups.add(group)
                 return Response({
-                    'details': 'That user was made a writer.',
+                    'detail': 'That user was made a writer.',
                 })
             except User.DoesNotExist:
                 return Response({
-                    'details': 'That user was not found.',
+                    'detail': 'That user was not found.',
                 }, status=status.HTTP_404_NOT_FOUND)
         else:
             return Response({
-                'details': 'That action could not be performed.',
+                'detail': 'That action could not be performed.',
             }, status=status.HTTP_403_FORBIDDEN)
 
 
@@ -84,11 +84,11 @@ class TestMakeWriter(APIView):
             assign_perm('posts.add_post', group)
             user.groups.add(group)
             return Response({
-                'details': 'That user was made a writer.',
+                'detail': 'That user was made a writer.',
             })
         except User.DoesNotExist:
             return Response({
-                'details': 'That user was not found.',
+                'detail': 'That user was not found.',
             }, status=status.HTTP_404_NOT_FOUND)
 
 class BackendAccessToken(CsrfExemptMixin, OAuthLibMixin, APIView):
@@ -139,7 +139,7 @@ class BackendAccessToken(CsrfExemptMixin, OAuthLibMixin, APIView):
                         return response
                 except KeyError:
                     return Response({
-                        "details": "The code you provided was invalid.",
+                        "detail": "The code you provided was invalid.",
                     }, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({
@@ -147,7 +147,7 @@ class BackendAccessToken(CsrfExemptMixin, OAuthLibMixin, APIView):
                 }, status=status.HTTP_404_NOT_FOUND)
         else:
             return Response({
-                    "details": {
+                    "detail": {
                         "code": [
                             {
                                 "message": "This field is required.",
@@ -185,7 +185,7 @@ class Oauth2TokenView(CsrfExemptMixin, OAuthLibMixin, APIView):
                 return response
             elif username and not password:
                 return Response({
-                    "details": {
+                    "detail": {
                         "password": [
                             {
                                 "message": "This field is required.",
@@ -196,7 +196,7 @@ class Oauth2TokenView(CsrfExemptMixin, OAuthLibMixin, APIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
             elif not username and password:
                 return Response({
-                    "details": {
+                    "detail": {
                         "username": [
                             {
                                 "message": "This field is required.",
@@ -207,7 +207,7 @@ class Oauth2TokenView(CsrfExemptMixin, OAuthLibMixin, APIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({
-                    "details": {
+                    "detail": {
                         "username": [
                             {
                                 "message": "This field is required.",
@@ -239,7 +239,7 @@ class Oauth2TokenView(CsrfExemptMixin, OAuthLibMixin, APIView):
                 return response
             else:
                 return Response({
-                    "details": {
+                    "detail": {
                         "refresh_token": [
                             {
                                 "message": "This field is required.",
@@ -250,7 +250,7 @@ class Oauth2TokenView(CsrfExemptMixin, OAuthLibMixin, APIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({
-                "details": {
+                "detail": {
                     "grant_type": [
                         {
                             "message": "This field is required.",
@@ -286,7 +286,7 @@ class RevokeOauth2TokenView(CsrfExemptMixin, OAuthLibMixin, APIView):
             return response
         else:
             return Response({
-                "details": {
+                "detail": {
                     "token": [
                         {
                             "message": "This field is required.",
@@ -399,11 +399,11 @@ class RequestResetPassword(APIView):
                 if success:
                     user.save()
                     return Response({
-                        "details": "A reset link was sent to the email.",
+                        "detail": "A reset link was sent to the email.",
                     })
                 else:
                     return Response({
-                        "details": {
+                        "detail": {
                             "email": [
                                 {
                                     "message": "This field was incorrect.",
@@ -414,11 +414,11 @@ class RequestResetPassword(APIView):
                     }, status=status.HTTP_400_BAD_REQUEST)
             except User.DoesNotExist:
                 return Response({
-                    'details': 'That user was not found.',
+                    'detail': 'That user was not found.',
                 }, status=status.HTTP_404_NOT_FOUND)
         else:
             return Response({
-                "details": {
+                "detail": {
                     "email": [
                         {
                             "message": "This field is required.",
@@ -445,7 +445,7 @@ class CheckResetParams(APIView):
                 }, status=status.HTTP_404_NOT_FOUND)
         elif username and not confirmation_token:
             return Response({
-                "details": {
+                "detail": {
                     "confirmation_token": [
                         {
                             "message": "This field is required.",
@@ -456,7 +456,7 @@ class CheckResetParams(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
         elif not username and confirmation_token:
             return Response({
-                "details": {
+                "detail": {
                     "username": [
                         {
                             "message": "This field is required.",
@@ -467,7 +467,7 @@ class CheckResetParams(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
         elif not username and not confirmation_token:
             return Response({
-                "details": {
+                "detail": {
                     "username": [
                         {
                             "message": "This field is required.",
@@ -503,7 +503,7 @@ class ResetPassword(APIView):
                 }, status=status.HTTP_404_NOT_FOUND)
         elif not confirmation_token and username and password:
             return Response({
-                "details": {
+                "detail": {
                     "confirmation_token": [
                         {
                             "message": "This field is required.",
@@ -514,7 +514,7 @@ class ResetPassword(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
         elif confirmation_token and not username and password:
             return Response({
-                "details": {
+                "detail": {
                     "username": [
                         {
                             "message": "This field is required.",
@@ -525,7 +525,7 @@ class ResetPassword(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
         elif confirmation_token and username and not password:
             return Response({
-                "details": {
+                "detail": {
                     "password": [
                         {
                             "message": "This field is required.",
@@ -536,7 +536,7 @@ class ResetPassword(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
         elif not confirmation_token and not username and not password:
             return Response({
-                "details": {
+                "detail": {
                     "confirmation_token": [
                         {
                             "message": "This field is required.",
@@ -565,19 +565,20 @@ class UpdateProfile(APIView):
             form = UserForm(request.data, instance=user)
             if form.is_valid():
                 form_user = form.save()
-                updated_user = model_to_dict(form_user, fields=['first_name', 'last_name', 'username', 'email'])
+                form_user.save()
+                updated_user = model_to_dict(form_user, fields=['first_name', 'last_name', 'username', 'email', 'bio'])
                 updated_user.update({'user_avatar': settings.DOMAIN_URL + form_user.profile.avatar.url})
                 return Response({
-                    "details": "The user profile was updated.",
+                    "detail": "The user profile was updated.",
                     "user": updated_user,
                 })
             else:
                 return Response({
-                        "details": json.loads(form.errors.as_json()),
+                        "detail": json.loads(form.errors.as_json()),
                     }, status=status.HTTP_400_BAD_REQUEST)
         except User.DoesNotExist:
             return Response({
-                    "details": "That user was not found.",
+                    "detail": "That user was not found.",
                 }, status=status.HTTP_404_NOT_FOUND)
 
 class UpdateAvatar(APIView):
@@ -591,16 +592,16 @@ class UpdateAvatar(APIView):
                 updated_user = model_to_dict(user, fields=['first_name', 'last_name', 'username', 'email'])
                 updated_user.update({'user_avatar': settings.DOMAIN_URL + profile.avatar.url})
                 return Response({
-                    "details": "The avatar was updated.",
+                    "detail": "The avatar was updated.",
                     "user": updated_user,
                 })
             else:
                 return Response({
-                        "details": json.loads(profile_form.errors.as_json()),
+                        "detail": json.loads(profile_form.errors.as_json()),
                     }, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({
-                    "details": {
+                    "detail": {
                         "avatar": [
                             {
                                 "message": "This field is required.",

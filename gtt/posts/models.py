@@ -74,7 +74,7 @@ class Post(models.Model):
     post_author = models.ForeignKey(User, related_name='posts', null=True, on_delete=models.SET_NULL)
     slug = models.SlugField(max_length=250)
     tags = models.ManyToManyField("Tag", related_name='posts')
-    categories = models.ManyToManyField("Category", related_name='posts')
+    category = models.ForeignKey("Category", related_name='posts', null=True, on_delete=models.SET_NULL)
     read_duration = models.CharField(max_length=10, default="0 min")
     resource_key = models.CharField(max_length=50, unique=True)
     archived = models.BooleanField(default=False)

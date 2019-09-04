@@ -51,7 +51,6 @@ sklearn = "*"
 pandas = "*"
 scipy = "*"
 nltk = "*"
-cpickle = "*"
 
 [requires]
 python_version = "3.7"
