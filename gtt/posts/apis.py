@@ -28,7 +28,7 @@ recommender = PostRecommender()
 class ViewTags(APIView):
     permission_classes = []
     def get(self, request):
-        tags = Tag.objects.all()
+        tags = Tag.objects.all().order_by('-date_added')
         paginator = LimitOffsetPaginationWithDefault()
         context = paginator.paginate_queryset(tags, request)
         serializer = TagSerializer(context, many=True)
@@ -37,7 +37,7 @@ class ViewTags(APIView):
 class ViewCategories(APIView):
     permission_classes = []
     def get(self, request):
-        categories = Category.objects.all()
+        categories = Category.objects.all().order_by('-date_added')
         paginator = LimitOffsetPaginationWithDefault()
         context = paginator.paginate_queryset(categories, request)
         serializer = CategorySerializer(context, many=True)
@@ -64,7 +64,7 @@ class ViewPost(APIView):
 class ViewRatedPosts(APIView):
     def get(self, request):
         user = User.objects.get(username=request.user.username)
-        user_rated_posts = Post.objects.filter(ratings__user_that_rated__pk=user.id, ratings__rating=True)
+        user_rated_posts = Post.objects.filter(ratings__user_that_rated__pk=user.id, ratings__rating=True).order_by('-date_published')
         paginator = LimitOffsetPaginationWithDefault()
         context = paginator.paginate_queryset(user_rated_posts, request)
         serializer = PostSerializer(context, many=True)
@@ -75,7 +75,7 @@ class ViewTagPosts(APIView):
     def get(self, request, tag_slug):
         try:
             tag = Tag.objects.get(slug=tag_slug)
-            tag_posts = tag.posts.all()
+            tag_posts = tag.posts.all().order_by('-date_published')
             paginator = LimitOffsetPaginationWithDefault()
             context = paginator.paginate_queryset(tag_posts, request)
             serializer = PostSerializer(context, many=True)
@@ -90,7 +90,7 @@ class ViewCategoryPosts(APIView):
     def get(self, request, category_slug):
         try:
             category = Category.objects.get(slug=category_slug)
-            category_posts = category.posts.all()
+            category_posts = category.posts.all().order_by('-date_published')
             paginator = LimitOffsetPaginationWithDefault()
             context = paginator.paginate_queryset(category_posts, request)
             serializer = PostSerializer(context, many=True)
@@ -109,7 +109,7 @@ class ViewPopularPosts(APIView):
             popular_posts = recommender.get_popular_posts(topn=int(top_n))
             if popular_posts.exists():
                 paginator = LimitOffsetPaginationWithDefault()
-                context = paginator.paginate_queryset(popular_posts, request)
+                context = paginator.paginate_queryset(popular_posts.order_by('-date_published'), request)
                 serializer = PostSerializer(context, many=True)
                 return paginator.get_paginated_response(serializer.data)
             else:
@@ -131,7 +131,7 @@ class ViewRecommendedPosts(APIView):
                 recommended_posts = recommender.get_recommended_posts(user_id=user.id, topn=int(top_n))
                 if recommended_posts.exists():
                     paginator = LimitOffsetPaginationWithDefault()
-                    context = paginator.paginate_queryset(recommended_posts, request)
+                    context = paginator.paginate_queryset(recommended_posts.order_by('-date_published'), request)
                     serializer = PostSerializer(context, many=True)
                     return paginator.get_paginated_response(serializer.data)
                 else:
@@ -151,7 +151,7 @@ class SearchPosts(generics.ListCreateAPIView):
     permission_classes = []
     search_fields = ['category__category_name', 'tags__tag_name', 'post_author__first_name', 'post_author__last_name', 'post_author__username', 'post_heading', 'post_body']
     filter_backends = (filters.SearchFilter,)
-    queryset = Post.objects.all()
+    queryset = Post.objects.all().order_by('-date_published')
     serializer_class = PostSerializer
 
 class CreatePost(APIView):
@@ -353,7 +353,7 @@ class RatePost(APIView):
 
 class ViewComments(APIView):
     def get(self, request, slug):
-        comments = Comment.objects.filter(commented_post__slug=slug)
+        comments = Comment.objects.filter(commented_post__slug=slug).order_by('-date_commented')
         paginator = LimitOffsetPaginationWithDefault()
         context = paginator.paginate_queryset(comments, request)
         serializer = CommentSerializer(context, many=True)
@@ -441,7 +441,7 @@ class DeleteComment(APIView):
 
 class ViewReplies(APIView):
     def get(self, request, resource_key):
-        replies = Reply.objects.filter(replied_comment__resource_key=resource_key)
+        replies = Reply.objects.filter(replied_comment__resource_key=resource_key).order_by('-date_replied')
         paginator = LimitOffsetPaginationWithDefault()
         context = paginator.paginate_queryset(replies, request)
         serializer = ReplySerializer(context, many=True)
@@ -529,7 +529,7 @@ class DeleteReply(APIView):
 class ViewBookmarks(APIView):
     def get(self, request):
         user = User.objects.get(username=request.user.username)
-        bookmarks = Bookmark.objects.filter(user_that_bookmarked__pk=user.id)
+        bookmarks = Bookmark.objects.filter(user_that_bookmarked__pk=user.id).order_by('-date_bookmarked')
         paginator = LimitOffsetPaginationWithDefault()
         context = paginator.paginate_queryset(bookmarks, request)
         serializer = BookmarkSerializer(context, many=True)
