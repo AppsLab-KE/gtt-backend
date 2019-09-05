@@ -576,6 +576,7 @@ class UpdateProfile(APIView):
                 return Response({
                         "detail": json.loads(form.errors.as_json()),
                     }, status=status.HTTP_400_BAD_REQUEST)
+                    
         except User.DoesNotExist:
             return Response({
                     "detail": "That user was not found.",

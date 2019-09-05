@@ -149,7 +149,7 @@ class ViewRecommendedPosts(APIView):
 
 class SearchPosts(generics.ListCreateAPIView):
     permission_classes = []
-    search_fields = ['categories__category_name', 'tags__tag_name', 'post_author__first_name', 'post_author__last_name', 'post_author__username', 'post_heading', 'post_body']
+    search_fields = ['category__category_name', 'tags__tag_name', 'post_author__first_name', 'post_author__last_name', 'post_author__username', 'post_heading', 'post_body']
     filter_backends = (filters.SearchFilter,)
     queryset = Post.objects.all()
     serializer_class = PostSerializer
@@ -172,9 +172,10 @@ class CreatePost(APIView):
                         }, request.FILES)
                     if post_form.is_valid():
                         try:
-                            Category.objects.get(category_name=category)
+                            category_obj = Category.objects.get(category_name=category)
                             post = post_form.save()
                             post.post_author = user
+                            post.category = category_obj
                             post.save()
                             tag_instance_list = []
                             for tag in tags:
@@ -248,7 +249,7 @@ class UpdatePost(APIView):
                     tag_instance_list = []
                     if post_form.is_valid():
                         try:
-                            Category.objects.get(category_name=category)
+                            category_obj = Category.objects.get(category_name=category)
                             updated_post = post_form.save()
                             for tag in tags:
                                 try:
@@ -261,7 +262,7 @@ class UpdatePost(APIView):
                             updated_post.category = None
                             updated_post.save()
                             updated_post.tags.clear()
-                            updated_post.category = category
+                            updated_post.category = category_obj
                             updated_post.save()
                             updated_post.tags.add(*tag_instance_list)
                             serializer = PostSerializer(instance=updated_post)

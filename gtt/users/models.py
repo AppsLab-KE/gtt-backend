@@ -14,7 +14,7 @@ def unique_photo_path(instance, filename):
 
 class User(AbstractUser):
     confirmation_token = models.CharField(max_length=255, null=True)
-    bio = models.TextField(default='')
+    bio = models.TextField(blank=True, default='')
 
     def __str__(self):
         return self.email
