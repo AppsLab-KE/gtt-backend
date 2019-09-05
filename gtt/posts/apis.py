@@ -304,24 +304,7 @@ class DeletePost(APIView):
         try:
             post = Post.objects.get(slug=slug)
             if user.has_perm('posts.delete_post', post):
-                post.archived = True
-                post.save()
-                comments = list(post.comments.all())
-                for comment in comments:
-                    comment.archived = True
-                    replies = list(comment.replies.all())
-                    for reply in replies:
-                        reply.archived = True
-                    Reply.objects.bulk_update(replies, ['archived'])
-                Comment.objects.bulk_update(comments, ['archived'])
-                ratings = list(post.ratings.all())
-                bookmarks = list(post.bookmarks.all())
-                for rating in ratings:
-                    rating.archived = True
-                Rating.objects.bulk_update(ratings, ['archived'])
-                for bookmark in bookmarks:
-                    bookmark.archived = True
-                Bookmark.objects.bulk_update(bookmarks, ['archived'])
+                post.delete()
                 return Response({
                     "detail": "Your post was deleted.",
                 })
@@ -443,12 +426,7 @@ class DeleteComment(APIView):
         try:
             comment = Comment.objects.get(resource_key=resource_key)
             if user.has_perm('posts.delete_comment', comment):
-                comment.archived = True
-                comment.save()
-                replies = list(comment.replies.all())
-                for reply in replies:
-                    reply.archived = True
-                Reply.objects.bulk_update(replies, ['archived'])
+                comment.delete()
                 return Response({
                     "detail": "Your comment for this post was deleted.",
                 })
@@ -535,8 +513,7 @@ class DeleteReply(APIView):
         try:
             reply = Reply.objects.get(resource_key=resource_key)
             if user.has_perm('posts.delete_reply', reply):
-                reply.archived = True
-                reply.save()
+                reply.delete()
                 return Response({
                     "detail": "Your reply was deleted.",
                 })
@@ -583,8 +560,7 @@ class DeleteBookmark(APIView):
         try:
             bookmark = Bookmark.objects.get(resource_key=resource_key)
             if user.has_perm('posts.delete_bookmark', bookmark):
-                bookmark.archived = True
-                bookmark.save()
+                bookmark.delete()
                 return Response({
                     "detail": "Your bookmark was deleted.",
                 })

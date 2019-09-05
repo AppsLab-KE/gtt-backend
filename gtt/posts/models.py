@@ -41,6 +41,10 @@ class Tag(models.Model):
             self.slug = get_tag_slug(self)
         super(Tag, self).save(*args, **kwargs)
 
+    def delete(self):
+        self.archived = True
+        super(Tag, self).save()
+
 class Category(models.Model):
     category_name = models.CharField(max_length=50)
     slug = models.SlugField(max_length=250)
@@ -63,6 +67,21 @@ class Category(models.Model):
         else:
             self.slug = get_category_slug(self)
         super(Category, self).save(*args, **kwargs)
+
+    @staticmethod
+    def get_empty_category():
+        category, created = Category.objects.get_or_create(category_name="")
+        return category
+
+    def delete(self):
+        empty_category = Category.get_empty_category()
+        posts = Post.objects.filter(category=self)
+        if posts:
+            for post in posts:
+                post.category = empty_category
+        Post.objects.bulk_update(posts, ['category'])
+        self.archived = True
+        super(Category, self).save()
 
     class Meta:
         verbose_name_plural = 'Categories'
@@ -89,8 +108,25 @@ class Post(models.Model):
             self.slug = get_slug_key(self, Post)
             self.resource_key = get_resource_key(Post)
         else:
-            self.slug = get_slug_key(self, Post)
+            slug = get_slug_key(self, Post)
+            self.slug = get_slug_key(self, Post, slug)
         super(Post, self).save(*args, **kwargs)
+
+    def delete(self):
+        comments = Comment.objects.filter(commented_post=self)
+        ratings = Rating.objects.filter(rated_post=self)
+        bookmarks = Bookmark.objects.filter(bookmarked_post=self)
+        if comments:
+            for comment in comments:
+                comment.delete()
+        if ratings:
+            for rating in ratings:
+                rating.delete()
+        if bookmarks:
+            for bookmark in bookmarks:
+                bookmark.delete()
+        self.archived = True
+        super(Post, self).save()
 
 class Comment(models.Model):
     commented_post = models.ForeignKey("Post", related_name='comments', null=True, on_delete=models.SET_NULL)
@@ -113,6 +149,14 @@ class Comment(models.Model):
             self.resource_key = get_resource_key(Comment)
         super(Comment, self).save(*args, **kwargs)
 
+    def delete(self):
+        replies = Reply.objects.filter(replied_comment=self)
+        if replies:
+            for reply in replies:
+                reply.delete()
+        self.archived = True
+        super(Comment, self).save()
+
 class Reply(models.Model):
     replied_comment = models.ForeignKey("Comment", related_name='replies', null=True, on_delete=models.SET_NULL)
     user_that_replied = models.ForeignKey(User, related_name='replies', null=True, on_delete=models.SET_NULL)
@@ -133,6 +177,10 @@ class Reply(models.Model):
         if not self.pk:
             self.resource_key = get_resource_key(Reply)
         super(Reply, self).save(*args, **kwargs)
+
+    def delete(self):
+        self.archived = True
+        super(Reply, self).save()
 
     class Meta:
         verbose_name_plural = 'Replies'
@@ -157,6 +205,9 @@ class Rating(models.Model):
         if not self.pk:
             self.resource_key = get_resource_key(Rating)
         super(Rating, self).save(*args, **kwargs)
+    def delete(self):
+        self.archived = True
+        super(Rating, self).save()
 
 class Bookmark(models.Model):
     bookmarked_post = models.ForeignKey("Post", related_name='bookmarks', null=True, on_delete=models.SET_NULL)
@@ -177,3 +228,7 @@ class Bookmark(models.Model):
         if not self.pk:
             self.resource_key = get_resource_key(Bookmark)
         super(Bookmark, self).save(*args, **kwargs)
+
+    def delete(self):
+        self.archived = True
+        super(Bookmark, self).save()

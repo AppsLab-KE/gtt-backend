@@ -63,17 +63,33 @@ def get_tag_slug(instance):
 def get_category_slug(instance):
     return slugify(instance.category_name[:249].capitalize())
 
-def get_slug_key(instance, model):
-    slug = slugify(instance.post_heading[:249])
-    slug_token = str()
-    while True:
-        slug_token = slug + "-" + get_random_token(20)
+def get_slug_key(instance, model, slug=None):
+    if slug is None:
+        slug = slugify(instance.post_heading[:249])
+        slug_token = str()
+        while True:
+            slug_token = slug + "-" + get_random_token(20)
+            try:
+                get_object_or_404(model, slug=slug_token)
+                continue
+            except Http404:
+                break
+        return slug_token
+    else:
         try:
-            get_object_or_404(model, slug=slug_token)
-            continue
+            get_object_or_404(model, slug__startswith=slug[:-20])
+            return instance.slug
         except Http404:
-            break
-    return slug_token
+            slug = slugify(instance.post_heading[:249])
+            slug_token = str()
+            while True:
+                slug_token = slug + "-" + get_random_token(20)
+                try:
+                    get_object_or_404(model, slug=slug_token)
+                    continue
+                except Http404:
+                    break
+            return slug_token
 
 def get_avatar_url(scheme, quoted_url):
     m = re.match(r'^\/media\/https?%3A\/(.*)', quoted_url)
