@@ -49,7 +49,7 @@ class ViewPost(APIView):
         try:
             post = Post.objects.get(slug=slug, post_author__username=username)
             if request.user.is_authenticated:
-                user = User.objects.get(email=request.user)
+                user = User.objects.get(username=request.user.username)
                 try:
                     Rating.objects.get(rated_post__pk=post.id, user_that_rated__pk=user.id)
                 except Rating.DoesNotExist:
@@ -63,7 +63,7 @@ class ViewPost(APIView):
 
 class ViewRatedPosts(APIView):
     def get(self, request):
-        user = User.objects.get(email=request.user)
+        user = User.objects.get(username=request.user.username)
         user_rated_posts = Post.objects.filter(ratings__user_that_rated__pk=user.id, ratings__rating=True)
         paginator = LimitOffsetPaginationWithDefault()
         context = paginator.paginate_queryset(user_rated_posts, request)
@@ -124,7 +124,7 @@ class ViewPopularPosts(APIView):
 class ViewRecommendedPosts(APIView):
     def get(self, request):
         top_n = request.GET.get('top_n', 10)
-        user = User.objects.get(email=request.user)
+        user = User.objects.get(username=request.user.username)
         if recommender.checksetUp():
             recommender.setUp()
             try:
@@ -161,7 +161,7 @@ class CreatePost(APIView):
         read_duration = request.data.get("read_duration")
         category = request.data.get('category', False)
         tags = request.data.getlist('tag')
-        user = User.objects.get(email=request.user)
+        user = User.objects.get(username=request.user.username)
         if category:
             if 'post_heading_image' in request.FILES:
                 if user.has_perm('posts.add_post'):
@@ -236,7 +236,7 @@ class UpdatePost(APIView):
         read_duration = request.data.get("read_duration")
         category = request.data.get('category', False)
         tags = request.data.getlist('tag')
-        user = User.objects.get(email=request.user)
+        user = User.objects.get(username=request.user.username)
         if category:
             try:
                 post = Post.objects.get(slug=slug)
@@ -300,7 +300,7 @@ class UpdatePost(APIView):
 
 class DeletePost(APIView):
     def post(self, request, slug):
-        user = User.objects.get(email=request.user)
+        user = User.objects.get(username=request.user.username)
         try:
             post = Post.objects.get(slug=slug)
             if user.has_perm('posts.delete_post', post):
@@ -320,7 +320,7 @@ class DeletePost(APIView):
 class RatePost(APIView):
     def post(self, request, slug):
         rated = bool(int(request.data.get('rating')))
-        user = User.objects.get(email=request.user)
+        user = User.objects.get(username=request.user.username)
         try:
             post = Post.objects.get(slug=slug)
             try:
@@ -362,7 +362,7 @@ class ViewComments(APIView):
 class CreateComment(APIView):
     def post(self, request, slug):
         comment = request.data.get('comment')
-        user = User.objects.get(email=request.user)
+        user = User.objects.get(username=request.user.username)
         try:
             post = Post.objects.get(slug=slug)
             comment_form = CommentForm({
@@ -392,7 +392,7 @@ class CreateComment(APIView):
 class UpdateComment(APIView):
     def post(self, request, resource_key):
         comment = request.data.get('comment')
-        user = User.objects.get(email=request.user)
+        user = User.objects.get(username=request.user.username)
         try:
             comment_instance = Comment.objects.get(resource_key=resource_key)
             if user.has_perm('posts.change_comment', comment_instance):
@@ -422,7 +422,7 @@ class UpdateComment(APIView):
 class DeleteComment(APIView):
     def post(self, request, resource_key):
         comment = request.data.get('comment')
-        user = User.objects.get(email=request.user)
+        user = User.objects.get(username=request.user.username)
         try:
             comment = Comment.objects.get(resource_key=resource_key)
             if user.has_perm('posts.delete_comment', comment):
@@ -450,7 +450,7 @@ class ViewReplies(APIView):
 class CreateReply(APIView):
     def post(self, request, resource_key):
         reply = request.data.get('reply')
-        user = User.objects.get(email=request.user)
+        user = User.objects.get(username=request.user.username)
         try:
             comment = Comment.objects.get(resource_key=resource_key)
             reply_form = ReplyForm({
@@ -480,7 +480,7 @@ class CreateReply(APIView):
 class UpdateReply(APIView):
     def post(self, request, resource_key):
         reply = request.data.get('reply')
-        user = User.objects.get(email=request.user)
+        user = User.objects.get(username=request.user.username)
         try:
             reply_instance = Reply.objects.get(resource_key=resource_key)
             if user.has_perm('posts.change_reply', reply_instance):
@@ -509,7 +509,7 @@ class UpdateReply(APIView):
 
 class DeleteReply(APIView):
     def post(self, request, resource_key):
-        user = User.objects.get(email=request.user)
+        user = User.objects.get(username=request.user.username)
         try:
             reply = Reply.objects.get(resource_key=resource_key)
             if user.has_perm('posts.delete_reply', reply):
@@ -528,7 +528,7 @@ class DeleteReply(APIView):
 
 class ViewBookmarks(APIView):
     def get(self, request):
-        user = User.objects.get(email=request.user)
+        user = User.objects.get(username=request.user.username)
         bookmarks = Bookmark.objects.filter(user_that_bookmarked__pk=user.id)
         paginator = LimitOffsetPaginationWithDefault()
         context = paginator.paginate_queryset(bookmarks, request)
@@ -538,7 +538,7 @@ class ViewBookmarks(APIView):
 
 class CreateBookmark(APIView):
     def post(self, request, slug):
-        user = User.objects.get(email=request.user)
+        user = User.objects.get(username=request.user.username)
         try:
             post = Post.objects.get(slug=slug)
             bookmark = Bookmark.objects.create(user_that_bookmarked=user, bookmarked_post=post)
@@ -556,7 +556,7 @@ class CreateBookmark(APIView):
 
 class DeleteBookmark(APIView):
     def post(self, request, resource_key):
-        user = User.objects.get(email=request.user)
+        user = User.objects.get(username=request.user.username)
         try:
             bookmark = Bookmark.objects.get(resource_key=resource_key)
             if user.has_perm('posts.delete_bookmark', bookmark):

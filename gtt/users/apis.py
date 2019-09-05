@@ -43,7 +43,7 @@ def get_access_token():
 
 class RequestWritership(APIView):
     def post(self, request):
-        user = User.objects.get(email=request.user)
+        user = User.objects.get(username=request.user.username)
         superusers = User.objects.filter(is_superuser=True)
         if superusers.exists():
             notify.send(sender=user, recipient=superusers, verb='make_writer', description="{} wants to become a writer.".format(user.username))
@@ -170,58 +170,64 @@ class Oauth2TokenView(CsrfExemptMixin, OAuthLibMixin, APIView):
         if grant_type == 'password':
             username = request.data.get('username', False)
             password = request.data.get('password', False)
-            if username and password:
-                password_querydict = get_password_querydict(username, password)
-                mutable_data = password_querydict.copy()
-                request._request.POST = password_querydict.copy()
-                for key, value in mutable_data.items():
-                    request._request.POST[key] = value
+            try:
+                User.objects.get(username=username)
+                if username and password:
+                    password_querydict = get_password_querydict(username, password)
+                    mutable_data = password_querydict.copy()
+                    request._request.POST = password_querydict.copy()
+                    for key, value in mutable_data.items():
+                        request._request.POST[key] = value
 
-                url, headers, body, resp_status = self.create_token_response(request._request)
-                response = Response(data=json.loads(body), status=resp_status)
+                    url, headers, body, resp_status = self.create_token_response(request._request)
+                    response = Response(data=json.loads(body), status=resp_status)
 
-                for k, v in headers.items():
-                    response[k] = v
-                return response
-            elif username and not password:
+                    for k, v in headers.items():
+                        response[k] = v
+                    return response
+                elif username and not password:
+                    return Response({
+                        "detail": {
+                            "password": [
+                                {
+                                    "message": "This field is required.",
+                                    "code": "required",
+                                }
+                            ]
+                        },
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                elif not username and password:
+                    return Response({
+                        "detail": {
+                            "username": [
+                                {
+                                    "message": "This field is required.",
+                                    "code": "required",
+                                }
+                            ]
+                        },
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({
+                        "detail": {
+                            "username": [
+                                {
+                                    "message": "This field is required.",
+                                    "code": "required",
+                                }
+                            ],
+                            "password": [
+                                {
+                                    "message": "This field is required.",
+                                    "code": "required",
+                                }
+                            ]
+                        },
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            except User.DoesNotExist:
                 return Response({
-                    "detail": {
-                        "password": [
-                            {
-                                "message": "This field is required.",
-                                "code": "required",
-                            }
-                        ]
-                    },
-                }, status=status.HTTP_400_BAD_REQUEST)
-            elif not username and password:
-                return Response({
-                    "detail": {
-                        "username": [
-                            {
-                                "message": "This field is required.",
-                                "code": "required",
-                            }
-                        ]
-                    },
-                }, status=status.HTTP_400_BAD_REQUEST)
-            else:
-                return Response({
-                    "detail": {
-                        "username": [
-                            {
-                                "message": "This field is required.",
-                                "code": "required",
-                            }
-                        ],
-                        "password": [
-                            {
-                                "message": "This field is required.",
-                                "code": "required",
-                            }
-                        ]
-                    },
-                }, status=status.HTTP_400_BAD_REQUEST)
+                    "detail": "Could not find a user with those credentials",
+                }, status=status.HTTP_401_UNAUTHORIZED)
         elif grant_type == 'refresh_token':
             refresh_token = request.data.get('refresh_token', False)
             if refresh_token:
@@ -561,7 +567,7 @@ class ResetPassword(APIView):
 class UpdateProfile(APIView):
     def post(self, request):
         try:
-            user = User.objects.get(email=request.user)
+            user = User.objects.get(username=request.user.username)
             form = UserForm(request.data, instance=user)
             if form.is_valid():
                 form_user = form.save()
@@ -586,11 +592,11 @@ class UpdateAvatar(APIView):
     def post(self, request):
         logging.debug(request)
         if 'avatar' in request.FILES:
-            user = User.objects.get(email=request.user)
+            user = User.objects.get(username=request.user.username)
             profile_form = AvatarForm({}, request.FILES, instance=user.profile)
             if profile_form.is_valid():
                 profile = profile_form.save()
-                updated_user = model_to_dict(user, fields=['first_name', 'last_name', 'username', 'email'])
+                updated_user = model_to_dict(user, fields=['first_name', 'last_name', 'username', 'email', 'bio'])
                 updated_user.update({'user_avatar': settings.DOMAIN_URL + profile.avatar.url})
                 return Response({
                     "detail": "The avatar was updated.",
