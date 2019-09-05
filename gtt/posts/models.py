@@ -107,9 +107,6 @@ class Post(models.Model):
         if not self.pk:
             self.slug = get_slug_key(self, Post)
             self.resource_key = get_resource_key(Post)
-        else:
-            slug = get_slug_key(self, Post)
-            self.slug = get_slug_key(self, Post, slug)
         super(Post, self).save(*args, **kwargs)
 
     def delete(self):
