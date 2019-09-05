@@ -1,3 +1,4 @@
+from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from collections import OrderedDict 
@@ -27,12 +28,17 @@ class LimitOffsetPaginationWithDefault(LimitOffsetPagination):
             return list(queryset[self.offset:self.offset + self.limit])
 
     def get_paginated_response(self, data):
-        if self.count > len(data):
-            return Response(OrderedDict([
-                ('count', self.count),
-                ('next', self.get_next_link()),
-                ('previous', self.get_previous_link()),
-                ('results', data)
-            ]))
-        elif self.count == len(data):
-            return Response(data)
+        if bool(len(data)): 
+            if self.count > len(data):
+                return Response(OrderedDict([
+                    ('count', self.count),
+                    ('next', self.get_next_link()),
+                    ('previous', self.get_previous_link()),
+                    ('results', data)
+                ]))
+            elif self.count == len(data):
+                return Response(data)
+        else:
+            return Response({
+                "detail": "Sorry. No data is available.",
+            }, status=status.HTTP_204_NO_CONTENT)
