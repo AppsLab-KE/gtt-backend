@@ -28,12 +28,9 @@ class LimitOffsetPaginationWithDefault(LimitOffsetPagination):
             return list(queryset[self.offset:self.offset + self.limit])
 
     def get_paginated_response(self, data): 
-        if self.count > len(data):
-            return Response(OrderedDict([
-                ('count', self.count),
-                ('next', self.get_next_link()),
-                ('previous', self.get_previous_link()),
-                ('results', data)
-            ]))
-        elif self.count == len(data):
-            return Response(data)
+        return Response(OrderedDict([
+            ('count', self.count),
+            ('next', self.get_next_link()),
+            ('previous', self.get_previous_link()),
+            ('results', data)
+        ]))
