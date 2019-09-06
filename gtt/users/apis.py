@@ -565,9 +565,9 @@ class ResetPassword(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
 class UserProfile(APIView):
-    def get(self, request):
+    def get(self, request, username):
         try:
-            user = User.objects.get(username=request.user.username)
+            user = User.objects.get(username=username)
             profile_user = model_to_dict(user, fields=['first_name', 'last_name', 'username', 'email', 'bio'])
             profile_user.update({'is_writer': is_writer(user), 'user_avatar': settings.DOMAIN_URL + user.profile.avatar.url})
             return Response({"user": profile_user})
