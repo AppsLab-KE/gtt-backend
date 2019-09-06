@@ -565,6 +565,7 @@ class ResetPassword(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
 class UserProfile(APIView):
+    permission_classes = []
     def get(self, request, username):
         try:
             user = User.objects.get(username=username)
