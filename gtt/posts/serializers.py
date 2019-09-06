@@ -91,7 +91,7 @@ class PostSerializer(serializers.ModelSerializer):
     post_heading_image = serializers.SerializerMethodField()
     post_body_preview = serializers.SerializerMethodField()
     post_author = UserSerializer(read_only=True)
-    category_name = serializers.SerializerMethodField()
+    category = CategorySerializer(read_only=True)
     tags = serializers.SerializerMethodField()
     comments_count = serializers.SerializerMethodField()
     ratings_count = serializers.SerializerMethodField()
@@ -104,7 +104,7 @@ class PostSerializer(serializers.ModelSerializer):
             'post_heading_image',
             'post_body_preview',
             'post_author',
-            'category_name',
+            'category',
             'tags',
             'read_duration',
             'date_published',
@@ -122,7 +122,7 @@ class PostSerializer(serializers.ModelSerializer):
         return obj.category.category_name
 
     def get_tags(self, obj):
-        return obj.tags.all().values('tag_name')
+        return obj.tags.all().values('tag_name', 'slug', 'date_added')
 
     def get_comments_count(self, obj):
         return obj.comments.count()
