@@ -3,7 +3,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from .models import Category, Tag, Post, Comment, Reply, Bookmark, Rating
-from .helpers import get_avatar_url
+from .helpers import is_writer, remove_html_tags, get_avatar_url
 
 User = get_user_model()
 
@@ -36,6 +36,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     user_avatar = serializers.SerializerMethodField()
+    is_writer = serializers.SerializerMethodField()
     class Meta:
         model = User
         fields = (
@@ -44,8 +45,12 @@ class UserSerializer(serializers.ModelSerializer):
             'username', 
             'email',
             'bio',
+            'is_writer',
             'user_avatar',
         )
+
+    def get_is_writer(self, obj):
+        return is_writer(obj)
 
     def get_user_avatar(self, obj):
         if 'https' in obj.profile.avatar.url:
@@ -111,7 +116,7 @@ class PostSerializer(serializers.ModelSerializer):
         return settings.DOMAIN_URL + obj.post_heading_image.url
 
     def get_post_body_preview(self, obj):
-        return obj.post_body[:100] + "..."
+        return "<p>" + remove_html_tags(obj.post_body[:300]) + "...</p>"
 
     def get_category_name(self, obj):
         return obj.category.category_name

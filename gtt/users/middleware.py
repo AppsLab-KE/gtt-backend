@@ -3,7 +3,7 @@ from django.conf import settings
 from oauth2_provider.models import AccessToken
 from django.forms.models import model_to_dict
 from django.utils.deprecation import MiddlewareMixin
-from posts.helpers import get_avatar_url
+from posts.helpers import is_writer, get_avatar_url
 
 
 class GetUserMiddleware(MiddlewareMixin):
@@ -20,15 +20,15 @@ class GetUserMiddleware(MiddlewareMixin):
                     access_token = AccessToken.objects.get(token=response.data['access_token'])
                     current_user = model_to_dict(access_token.user, fields=['first_name', 'last_name', 'username', 'email', 'bio'])
                     if 'https' in access_token.user.profile.avatar.url:
-                        current_user.update({'user_avatar': get_avatar_url('https://', access_token.user.profile.avatar.url)})
+                        current_user.update({'is_writer': is_writer(access_token.user), 'user_avatar': get_avatar_url('https://', access_token.user.profile.avatar.url)})
                         response.data.update({'user': current_user})
                         response.content = json.dumps(response.data)
                     elif 'http' in access_token.user.profile.avatar.url:
-                        current_user.update({'user_avatar': get_avatar_url('http://', access_token.user.profile.avatar.url)})
+                        current_user.update({'is_writer': is_writer(access_token.user), 'user_avatar': get_avatar_url('http://', access_token.user.profile.avatar.url)})
                         response.data.update({'user': current_user})
                         response.content = json.dumps(response.data)
                     else:
-                        current_user.update({'user_avatar': settings.DOMAIN_URL + access_token.user.profile.avatar.url})
+                        current_user.update({'is_writer': is_writer(access_token.user), 'user_avatar': settings.DOMAIN_URL + access_token.user.profile.avatar.url})
                         response.data.update({'user': current_user})
                         response.content = json.dumps(response.data)
                 except AccessToken.DoesNotExist:

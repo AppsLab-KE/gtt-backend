@@ -61,6 +61,21 @@ class ViewPost(APIView):
                 "detail": "That post was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
+class ViewUserPosts(APIView):
+    permission_classes = []
+    def get(self, request, username):
+        try:
+            user = User.objects.get(username=username)
+            paginator = LimitOffsetPaginationWithDefault()
+            context = paginator.paginate_queryset(user.posts.order_by('-date_published'), request)
+            serializer = PostSerializer(context, many=True)
+            return paginator.get_paginated_response(serializer.data)
+        except User.DoesNotExist:
+            return Response({
+                "detail": "That user was not found.",
+            }, status=status.HTTP_404_NOT_FOUND)
+
+
 class ViewRatedPosts(APIView):
     def get(self, request):
         user = User.objects.get(username=request.user.username)

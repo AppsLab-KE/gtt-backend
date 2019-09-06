@@ -22,7 +22,7 @@ from rest_framework_social_oauth2.oauth2_backends import KeepRequestCore
 from rest_framework_social_oauth2.oauth2_endpoints import SocialTokenServer
 from notifications.signals import notify
 from posts.helpers import (
-    get_random_token, get_bitbucket_access_token, get_github_access_token, get_gitlab_access_token,
+    is_writer, get_random_token, get_bitbucket_access_token, get_github_access_token, get_gitlab_access_token,
     user_confirmation_token, send_email, prepare_message, get_password_querydict, get_token_querydict,
     get_revoke_token_querydict, get_app,
 )
@@ -564,6 +564,18 @@ class ResetPassword(APIView):
                 },
             }, status=status.HTTP_400_BAD_REQUEST)
 
+class UserProfile(APIView):
+    def get(self, request):
+        try:
+            user = User.objects.get(username=request.user.username)
+            profile_user = model_to_dict(user, fields=['first_name', 'last_name', 'username', 'email', 'bio'])
+            profile_user.update({'is_writer': is_writer(user), 'user_avatar': settings.DOMAIN_URL + user.profile.avatar.url})
+            return Response({"user": profile_user})
+        except User.DoesNotExist:
+            return Response({
+                    "detail": "That user was not found.",
+                }, status=status.HTTP_404_NOT_FOUND)
+
 class UpdateProfile(APIView):
     def post(self, request):
         try:
@@ -573,7 +585,7 @@ class UpdateProfile(APIView):
                 form_user = form.save()
                 form_user.save()
                 updated_user = model_to_dict(form_user, fields=['first_name', 'last_name', 'username', 'email', 'bio'])
-                updated_user.update({'user_avatar': settings.DOMAIN_URL + form_user.profile.avatar.url})
+                updated_user.update({'is_writer': is_writer(form_user), 'user_avatar': settings.DOMAIN_URL + form_user.profile.avatar.url})
                 return Response({
                     "detail": "The user profile was updated.",
                     "user": updated_user,
@@ -597,7 +609,7 @@ class UpdateAvatar(APIView):
             if profile_form.is_valid():
                 profile = profile_form.save()
                 updated_user = model_to_dict(user, fields=['first_name', 'last_name', 'username', 'email', 'bio'])
-                updated_user.update({'user_avatar': settings.DOMAIN_URL + profile.avatar.url})
+                updated_user.update({'is_writer': is_writer(user), 'user_avatar': settings.DOMAIN_URL + profile.avatar.url})
                 return Response({
                     "detail": "The avatar was updated.",
                     "user": updated_user,

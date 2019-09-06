@@ -2,7 +2,7 @@ from django.conf import settings
 from django.urls import path
 from .apis import (
     RequestWritership, MakeWriter, TestMakeWriter, BackendAccessToken, Oauth2TokenView, RevokeOauth2TokenView,
-    InvalidateSessions, TestAccessToken, UpdateAvatar, UpdateProfile, RequestResetPassword, CheckResetParams, ResetPassword,
+    InvalidateSessions, TestAccessToken, UserProfile, UpdateAvatar, UpdateProfile, RequestResetPassword, CheckResetParams, ResetPassword,
 )
 
 urlpatterns = [
@@ -14,6 +14,7 @@ urlpatterns = [
     path(settings.API + 'auth/oauth2/invalidate-sessions', InvalidateSessions.as_view(), name='invalidate_oauth2_sessions'),
     path(settings.API + 'auth/oauth2/revoke-token', RevokeOauth2TokenView.as_view(), name='revoke_oauth2_token_api'),
     path(settings.API + 'users/access_token/test', TestAccessToken.as_view(), name='test_access_token'),
+    path(settings.API + 'users/profile', UserProfile.as_view(), name='user_profile'),
     path(settings.API + 'users/profile/avatar/update', UpdateAvatar.as_view(), name='update_avatar'),
     path(settings.API + 'users/profile/update', UpdateProfile.as_view(), name='update_profile'),
     path(settings.API + 'users/password/reset/request', RequestResetPassword.as_view(), name='request_reset_password'),

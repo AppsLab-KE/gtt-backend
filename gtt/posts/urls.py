@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.urls import path
 from .apis import (
-    ViewTags, ViewCategories, ViewPost, ViewRatedPosts, ViewTagPosts, ViewCategoryPosts, ViewPopularPosts, ViewRecommendedPosts, SearchPosts, CreatePost, UpdatePost, 
+    ViewTags, ViewCategories, ViewPost, ViewUserPosts, ViewRatedPosts, ViewTagPosts, ViewCategoryPosts, ViewPopularPosts, ViewRecommendedPosts, SearchPosts, CreatePost, UpdatePost, 
     DeletePost, RatePost, ViewComments, CreateComment, UpdateComment, DeleteComment,
     ViewReplies, CreateReply, UpdateReply, DeleteReply,
     ViewBookmarks, CreateBookmark, DeleteBookmark,
@@ -9,6 +9,7 @@ from .apis import (
 
 urlpatterns = [
     path(settings.API + "posts/@<username>/<slug:slug>", ViewPost.as_view(), name='view_post'),
+    path(settings.API + "posts/@<username>", ViewUserPosts.as_view(), name='view_user_posts'),
     path(settings.API + "posts/rated", ViewRatedPosts.as_view(), name='view_rated_posts'),
     path(settings.API + "posts/tags/<slug:tag_slug>", ViewTagPosts.as_view(), name='view_tag_posts'),
     path(settings.API + "posts/categories/<slug:category_slug>", ViewCategoryPosts.as_view(), name='view_category_posts'),

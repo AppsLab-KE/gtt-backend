@@ -35,6 +35,18 @@ def get_app():
         )
         return gtt_app
 
+def is_writer(user):
+        if user.has_perm('posts.add_post'):
+            return  True
+        else:
+            return False
+
+def remove_html_tags(text):
+    """Remove html tags from a string"""
+    import re
+    clean = re.compile('<.*?>')
+    return re.sub(clean, '', text).rstrip('...')
+
 def get_random_token(length):
     token = str()
     alphabet = string.ascii_letters + string.digits 
