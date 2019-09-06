@@ -16,7 +16,8 @@ class LimitOffsetPaginationWithDefault(LimitOffsetPagination):
         if self.limit is None and self.offset == 0:
             return list(queryset)
         elif self.limit is None and self.offset != 0:
-            return list(queryset[self.offset:self.offset + self.count])
+            self.limit = self.count
+            return list(queryset[self.offset:self.offset + self.limit])
         else:
             self.request = request
             if self.count > self.limit and self.template is not None:
