@@ -14,7 +14,7 @@ from .forms import (
 )
 from .serializers import (
     CategorySerializer, TagSerializer, CommentSerializer, ReplySerializer,
-    PostSerializer, BookmarkSerializer,
+    PostPreviewSerializer, PostSerializer, BookmarkSerializer,
 )
 from .models import (
     Category, Tag, Post, Comment, Reply, Rating, Bookmark,
@@ -68,7 +68,7 @@ class ViewUserPosts(APIView):
             user = User.objects.get(username=username)
             paginator = LimitOffsetPaginationWithDefault()
             context = paginator.paginate_queryset(user.posts.order_by('-date_published'), request)
-            serializer = PostSerializer(context, many=True)
+            serializer = PostPreviewSerializer(context, many=True)
             return paginator.get_paginated_response(serializer.data)
         except User.DoesNotExist:
             return Response({
@@ -82,7 +82,7 @@ class ViewRatedPosts(APIView):
         user_rated_posts = Post.objects.filter(ratings__user_that_rated__pk=user.id, ratings__rating=True).order_by('-date_published')
         paginator = LimitOffsetPaginationWithDefault()
         context = paginator.paginate_queryset(user_rated_posts, request)
-        serializer = PostSerializer(context, many=True)
+        serializer = PostPreviewSerializer(context, many=True)
         return paginator.get_paginated_response(serializer.data)
 
 class ViewTagPosts(APIView):
@@ -93,7 +93,7 @@ class ViewTagPosts(APIView):
             tag_posts = tag.posts.all().order_by('-date_published')
             paginator = LimitOffsetPaginationWithDefault()
             context = paginator.paginate_queryset(tag_posts, request)
-            serializer = PostSerializer(context, many=True)
+            serializer = PostPreviewSerializer(context, many=True)
             return paginator.get_paginated_response(serializer.data)
         except Tag.DoesNotExist:
             return Response({
@@ -108,7 +108,7 @@ class ViewCategoryPosts(APIView):
             category_posts = category.posts.all().order_by('-date_published')
             paginator = LimitOffsetPaginationWithDefault()
             context = paginator.paginate_queryset(category_posts, request)
-            serializer = PostSerializer(context, many=True)
+            serializer = PostPreviewSerializer(context, many=True)
             return paginator.get_paginated_response(serializer.data)
         except Category.DoesNotExist:
             return Response({
@@ -125,7 +125,7 @@ class ViewPopularPosts(APIView):
             if popular_posts.exists():
                 paginator = LimitOffsetPaginationWithDefault()
                 context = paginator.paginate_queryset(popular_posts.order_by('-date_published'), request)
-                serializer = PostSerializer(context, many=True)
+                serializer = PostPreviewSerializer(context, many=True)
                 return paginator.get_paginated_response(serializer.data)
             else:
                 return Response({
@@ -147,7 +147,7 @@ class ViewRecommendedPosts(APIView):
                 if recommended_posts.exists():
                     paginator = LimitOffsetPaginationWithDefault()
                     context = paginator.paginate_queryset(recommended_posts.order_by('-date_published'), request)
-                    serializer = PostSerializer(context, many=True)
+                    serializer = PostPreviewSerializer(context, many=True)
                     return paginator.get_paginated_response(serializer.data)
                 else:
                     return Response({
@@ -167,7 +167,7 @@ class SearchPosts(generics.ListCreateAPIView):
     search_fields = ['category__category_name', 'tags__tag_name', 'post_author__first_name', 'post_author__last_name', 'post_author__username', 'post_heading', 'post_body']
     filter_backends = (filters.SearchFilter,)
     queryset = Post.objects.all().order_by('-date_published')
-    serializer_class = PostSerializer
+    serializer_class = PostPreviewSerializer
 
 class CreatePost(APIView):
     def post(self, request):

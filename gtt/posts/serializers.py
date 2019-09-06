@@ -87,7 +87,7 @@ class CommentSerializer(serializers.ModelSerializer):
     def get_replies_count(self, obj):
         return obj.replies.count()
 
-class PostSerializer(serializers.ModelSerializer):
+class PostPreviewSerializer(serializers.ModelSerializer):
     post_heading_image = serializers.SerializerMethodField()
     post_body_preview = serializers.SerializerMethodField()
     post_author = UserSerializer(read_only=True)
@@ -117,6 +117,45 @@ class PostSerializer(serializers.ModelSerializer):
 
     def get_post_body_preview(self, obj):
         return "<p>" + remove_html_tags(obj.post_body[:300]) + "...</p>"
+
+    def get_category_name(self, obj):
+        return obj.category.category_name
+
+    def get_tags(self, obj):
+        return obj.tags.all().values('tag_name', 'slug', 'date_added')
+
+    def get_comments_count(self, obj):
+        return obj.comments.count()
+
+    def get_ratings_count(self, obj):
+        return obj.ratings.filter(rating=True).count()
+
+class PostSerializer(serializers.ModelSerializer):
+    post_heading_image = serializers.SerializerMethodField()
+    post_author = UserSerializer(read_only=True)
+    category = CategorySerializer(read_only=True)
+    tags = serializers.SerializerMethodField()
+    comments_count = serializers.SerializerMethodField()
+    ratings_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Post
+        fields = (
+            'slug',
+            'post_heading',
+            'post_heading_image',
+            'post_body',
+            'post_author',
+            'category',
+            'tags',
+            'read_duration',
+            'date_published',
+            'comments_count',
+            'ratings_count',
+        )
+
+    def get_post_heading_image(self, obj):
+        return settings.DOMAIN_URL + obj.post_heading_image.url
 
     def get_category_name(self, obj):
         return obj.category.category_name
