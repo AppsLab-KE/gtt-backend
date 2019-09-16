@@ -46,16 +46,42 @@ class ViewCategories(APIView):
 class ViewPost(APIView):
     permission_classes = []
     def get(self, request, username, slug):
+        has_rated = False
+        has_bookmarked = False
         try:
             post = Post.objects.get(slug=slug, post_author__username=username)
             if request.user.is_authenticated:
                 user = User.objects.get(username=request.user.username)
                 try:
-                    Rating.objects.get(rated_post__pk=post.id, user_that_rated__pk=user.id)
+                    rating = Rating.objects.get(rated_post__pk=post.id, user_that_rated__pk=user.id)
+                    if rating.rating:
+                        has_rated = True
+                    try:
+                        Bookmark.objects.get(user_that_bookmarked__pk=user.id, bookmarked_post__pk=post.id)
+                        has_bookmarked = True
+                    except Bookmark.DoesNotExist:
+                        has_bookmarked = False
                 except Rating.DoesNotExist:
                     Rating.objects.create(rated_post=post, user_that_rated=user)
-            serializer = PostSerializer(instance=post)
-            return Response(serializer.data)
+            if request.user.is_authenticated:
+                serializer = PostSerializer(instance=post)
+                return Response({'slug': serializer.data['slug'],
+                'post_heading': serializer.data['post_heading'],
+                'post_heading_image': serializer.data['post_heading_image'],
+                'post_body': serializer.data['post_body'],
+                'post_author': serializer.data['post_author'],
+                'category': serializer.data['category'],
+                'tags': serializer.data['tags'],
+                'has_rated': has_rated,
+                'has_bookmarked': has_bookmarked,
+                'read_duration': serializer.data['read_duration'],
+                'date_published': serializer.data['date_published'],
+                'comments_count': serializer.data['comments_count'],
+                'ratings_count': serializer.data['ratings_count'],
+            })
+            else:
+                serializer = PostSerializer(instance=post)
+                return Response(serializer.data)
         except Post.DoesNotExist:
             return Response({
                 "detail": "That post was not found.",
@@ -367,6 +393,7 @@ class RatePost(APIView):
             }, status=status.HTTP_404_NOT_FOUND)
 
 class ViewComments(APIView):
+    permission_classes = []
     def get(self, request, slug):
         comments = Comment.objects.filter(commented_post__slug=slug).order_by('-date_commented')
         paginator = LimitOffsetPaginationWithDefault()
