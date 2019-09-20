@@ -571,8 +571,7 @@ class DeleteReply(APIView):
 class ViewBookmarks(APIView):
     def get(self, request):
         user = User.objects.get(username=request.user.username)
-        print(user.id)
-        posts = Post.objects.filter(bookmarks__user_that_bookmarked__pk=user.id).order_by('-bookmarks__date_bookmarked')
+        posts = Post.objects.filter(bookmarks__user_that_bookmarked__pk=user.id, bookmarks__archived=False).order_by('-bookmarks__date_bookmarked')
         paginator = LimitOffsetPaginationWithDefault()
         context = paginator.paginate_queryset(posts, request)
         serializer = PostPreviewSerializer(context, many=True)
