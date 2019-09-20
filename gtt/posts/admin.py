@@ -17,7 +17,6 @@ class BookmarkAdmin(admin.ModelAdmin):
     list_display = (
         'bookmarked_post',
         'user_that_bookmarked',
-        'resource_key',
     )
 
 admin.site.register(Category, CategoryAdmin)

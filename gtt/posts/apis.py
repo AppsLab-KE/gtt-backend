@@ -14,7 +14,7 @@ from .forms import (
 )
 from .serializers import (
     CategorySerializer, TagSerializer, CommentSerializer, ReplySerializer,
-    PostPreviewSerializer, PostSerializer, BookmarkSerializer,
+    PostPreviewSerializer, PostSerializer,
 )
 from .models import (
     Category, Tag, Post, Comment, Reply, Rating, Bookmark,
@@ -571,10 +571,11 @@ class DeleteReply(APIView):
 class ViewBookmarks(APIView):
     def get(self, request):
         user = User.objects.get(username=request.user.username)
-        bookmarks = Bookmark.objects.filter(user_that_bookmarked__pk=user.id).order_by('-date_bookmarked')
+        print(user.id)
+        posts = Post.objects.filter(bookmarks__user_that_bookmarked__pk=user.id).order_by('-bookmarks__date_bookmarked')
         paginator = LimitOffsetPaginationWithDefault()
-        context = paginator.paginate_queryset(bookmarks, request)
-        serializer = BookmarkSerializer(context, many=True)
+        context = paginator.paginate_queryset(posts, request)
+        serializer = PostPreviewSerializer(context, many=True)
         return paginator.get_paginated_response(serializer.data)
         
 
@@ -586,7 +587,7 @@ class CreateBookmark(APIView):
             bookmark = Bookmark.objects.create(user_that_bookmarked=user, bookmarked_post=post)
             assign_perm('posts.change_bookmark', user, bookmark)
             assign_perm('posts.delete_bookmark', user, bookmark)
-            serializer = BookmarkSerializer(instance=bookmark)
+            serializer = PostPreviewSerializer(instance=post)
             return Response({
                 "detail": "Your bookmark was created successfully.",
                 "bookmark": serializer.data,
@@ -597,10 +598,10 @@ class CreateBookmark(APIView):
             }, status=status.HTTP_404_NOT_FOUND)
 
 class DeleteBookmark(APIView):
-    def post(self, request, resource_key):
+    def post(self, request, slug):
         user = User.objects.get(username=request.user.username)
         try:
-            bookmark = Bookmark.objects.get(resource_key=resource_key)
+            bookmark = Bookmark.objects.get(bookmarked_post__slug=slug, user_that_bookmarked__pk=user.id)
             if user.has_perm('posts.delete_bookmark', bookmark):
                 bookmark.delete()
                 return Response({

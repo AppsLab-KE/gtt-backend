@@ -32,5 +32,5 @@ urlpatterns = [
     path(settings.API + "replies/<resource_key>/delete", DeleteReply.as_view(), name='delete_reply'),
     path(settings.API + "bookmarks", ViewBookmarks.as_view(), name='view_bookmarks'),
     path(settings.API + "posts/<slug:slug>/bookmark/create", CreateBookmark.as_view(), name='create_bookmark'),
-    path(settings.API + "bookmarks/<resource_key>/delete", DeleteBookmark.as_view(), name='delete_bookmark'),
+    path(settings.API + "bookmarks/<slug>/delete", DeleteBookmark.as_view(), name='delete_bookmark'),
 ]
