@@ -583,14 +583,19 @@ class CreateBookmark(APIView):
         user = User.objects.get(username=request.user.username)
         try:
             post = Post.objects.get(slug=slug)
-            bookmark = Bookmark.objects.create(user_that_bookmarked=user, bookmarked_post=post)
+            bookmark, ok = Bookmark.objects.get_or_create(user_that_bookmarked=user, bookmarked_post=post)
             assign_perm('posts.change_bookmark', user, bookmark)
             assign_perm('posts.delete_bookmark', user, bookmark)
             serializer = PostPreviewSerializer(instance=post)
-            return Response({
-                "detail": "Your bookmark was created successfully.",
-                "bookmark": serializer.data,
-            })
+            if ok:
+                return Response({
+                    "detail": "Your bookmark was created successfully.",
+                    "bookmark": serializer.data,
+                })
+            else:
+                return Response({
+                    "detail": "That bookmark already exists.",
+                })
         except Post.DoesNotExist:
             return Response({
                 "detail": "That post was not found.",
