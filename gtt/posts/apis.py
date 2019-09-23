@@ -595,7 +595,7 @@ class CreateBookmark(APIView):
             else:
                 return Response({
                     "detail": "That bookmark already exists.",
-                })
+                }, status=status.HTTP_400_BAD_REQUEST)
         except Post.DoesNotExist:
             return Response({
                 "detail": "That post was not found.",
