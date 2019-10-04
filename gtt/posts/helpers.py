@@ -127,6 +127,23 @@ def get_github_access_token(code):
     #convert_response =  requests.post(settings.DOMAIN_URL + '/' + settings.API + 'oauth2/convert-token', data=convert_token_data)
     #return convert_response.json()
 
+def get_google_access_token(code):
+    gtt_app = get_app()
+    client_id = settings.SOCIAL_AUTH_GOOGLE_OAUTH2_KEY
+    client_secret = settings.SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET
+    data = {
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'code': code,
+        'redirect_uri': 'https://geekstalkthursday.co.ke',
+        'grant_type': 'authorization_code',
+        }
+    headers = {'Accept': 'application/json'}
+    response =  requests.post('https://oauth2.googleapis.com/token', data=data, headers=headers)
+    print(response.json())
+    google_access_token = response.json()
+    return QueryDict('grant_type=convert_token&client_id=' + gtt_app.client_id + '&client_secret=' + gtt_app.client_secret + '&backend=google-oauth2&token=' + google_access_token['access_token'])
+
 def get_gitlab_access_token(code):
     client_id=settings.SOCIAL_AUTH_GITLAB_KEY
     client_secret=settings.SOCIAL_AUTH_GITLAB_SECRET

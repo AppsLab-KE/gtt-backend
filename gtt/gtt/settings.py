@@ -146,6 +146,7 @@ OAUTH2_PROVIDER = {
 AUTHENTICATION_BACKENDS = (
     'social_core.backends.github.GithubOAuth2',
     'social_core.backends.bitbucket.BitbucketOAuth2',
+    'social_core.backends.google.GoogleOAuth2',
     'social_core.backends.gitlab.GitLabOAuth2',
     'rest_framework_social_oauth2.backends.DjangoOAuth2',
     'django.contrib.auth.backends.ModelBackend',
@@ -178,6 +179,9 @@ SOCIAL_AUTH_BITBUCKET_OAUTH2_SECRET = os.getenv('SOCIAL_AUTH_BITBUCKET_OAUTH2_SE
 # Gitlab configuration
 SOCIAL_AUTH_GITLAB_KEY = os.getenv('SOCIAL_AUTH_GITLAB_KEY')
 SOCIAL_AUTH_GITLAB_SECRET = os.getenv('SOCIAL_AUTH_GITLAB_SECRET')
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators

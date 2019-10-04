@@ -22,9 +22,9 @@ from rest_framework_social_oauth2.oauth2_backends import KeepRequestCore
 from rest_framework_social_oauth2.oauth2_endpoints import SocialTokenServer
 from notifications.signals import notify
 from posts.helpers import (
-    is_writer, get_random_token, get_bitbucket_access_token, get_github_access_token, get_gitlab_access_token,
-    user_confirmation_token, send_email, prepare_message, get_password_querydict, get_token_querydict,
-    get_revoke_token_querydict, get_app,
+    is_writer, get_random_token, get_bitbucket_access_token, get_github_access_token, get_google_access_token, 
+    get_gitlab_access_token, user_confirmation_token, send_email, prepare_message, get_password_querydict, 
+    get_token_querydict, get_revoke_token_querydict, get_app,
 )
 from .forms import AvatarForm, UserForm
 
@@ -101,7 +101,7 @@ class BackendAccessToken(CsrfExemptMixin, OAuthLibMixin, APIView):
     def post(self, request, backend_name):
         if 'code' in request.data:
             code = request.data.get('code')
-            if backend_name in ['bitbucket', 'github', 'gitlab']:
+            if backend_name in ['bitbucket', 'github', 'google', 'gitlab']:
                 try:
                     if backend_name == 'bitbucket':
                         redirect_uri = request.data.get('redirectUri')
@@ -117,6 +117,17 @@ class BackendAccessToken(CsrfExemptMixin, OAuthLibMixin, APIView):
                         return response
                     elif backend_name == 'github':
                         access_response = get_github_access_token(code)
+                        mutable_data = access_response.copy()
+                        request._request.POST = access_response.copy()
+                        for key, value in mutable_data.items():
+                            request._request.POST[key] = value
+                        url, headers, body, resp_status = self.create_token_response(request._request)
+                        response = Response(data=json.loads(body), status=resp_status)
+                        for k, v in headers.items():
+                            response[k] = v
+                        return response
+                    elif backend_name == 'google':
+                        access_response = get_google_access_token(code)
                         mutable_data = access_response.copy()
                         request._request.POST = access_response.copy()
                         for key, value in mutable_data.items():
