@@ -109,12 +109,15 @@ CORS_ORIGIN_ALLOW_ALL = True
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 
-#SECRET_KEY = config('SECRET_KEY')
-#DEBUG = config('DEBUG', default=False, cast=bool)
 #DATABASES = {
-#    'default': dj_database_url.config(
-#        default=config('DATABASE_URL')
-#    )
+#    'default': {
+#        'ENGINE': os.getenv('DB_ENGINE'), 
+#        'NAME': os.getenv('DB_NAME'),
+#        'USER': os.getenv('DB_USER'),
+#        'PASSWORD': os.getenv('DB_PASSWORD'),
+#        'HOST': os.getenv('DB_HOST'),   # Or an IP Address that your DB is hosted on
+#        'PORT': os.getenv('DB_PORT'),
+#   }
 #}
 
 
