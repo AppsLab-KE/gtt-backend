@@ -140,7 +140,6 @@ def get_google_access_token(code):
         }
     headers = {'Accept': 'application/json'}
     response =  requests.post('https://oauth2.googleapis.com/token', data=data, headers=headers)
-    print(response.json())
     google_access_token = response.json()
     return QueryDict('grant_type=convert_token&client_id=' + gtt_app.client_id + '&client_secret=' + gtt_app.client_secret + '&backend=google-oauth2&token=' + google_access_token['access_token'])
 
