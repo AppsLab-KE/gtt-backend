@@ -146,14 +146,19 @@ class ViewPopularPosts(APIView):
     def get(self, request):
         top_n = request.GET.get('top_n', 10)
         if recommender.checksetUp():
-            recommender.setUp()
-            popular_posts = recommender.get_popular_posts(topn=int(top_n))
-            if popular_posts.exists():
-                paginator = LimitOffsetPaginationWithDefault()
-                context = paginator.paginate_queryset(popular_posts.order_by('-date_published'), request)
-                serializer = PostPreviewSerializer(context, many=True)
-                return paginator.get_paginated_response(serializer.data)
-            else:
+            try:
+                recommender.setUp()
+                popular_posts = recommender.get_popular_posts(topn=int(top_n))
+                if popular_posts.exists():
+                    paginator = LimitOffsetPaginationWithDefault()
+                    context = paginator.paginate_queryset(popular_posts.order_by('-date_published'), request)
+                    serializer = PostPreviewSerializer(context, many=True)
+                    return paginator.get_paginated_response(serializer.data)
+                else:
+                    return Response({
+                        "detail": "Sorry. No popular posts available for you yet.",
+                    }, status=status.HTTP_204_NO_CONTENT)
+            except Exception:
                 return Response({
                     "detail": "Sorry. No popular posts available for you yet.",
                 }, status=status.HTTP_204_NO_CONTENT)
@@ -167,19 +172,24 @@ class ViewRecommendedPosts(APIView):
         top_n = request.GET.get('top_n', 10)
         user = User.objects.get(username=request.user.username)
         if recommender.checksetUp():
-            recommender.setUp()
             try:
-                recommended_posts = recommender.get_recommended_posts(user_id=user.id, topn=int(top_n))
-                if recommended_posts.exists():
-                    paginator = LimitOffsetPaginationWithDefault()
-                    context = paginator.paginate_queryset(recommended_posts.order_by('-date_published'), request)
-                    serializer = PostPreviewSerializer(context, many=True)
-                    return paginator.get_paginated_response(serializer.data)
-                else:
+                recommender.setUp()
+                try:
+                    recommended_posts = recommender.get_recommended_posts(user_id=user.id, topn=int(top_n))
+                    if recommended_posts.exists():
+                        paginator = LimitOffsetPaginationWithDefault()
+                        context = paginator.paginate_queryset(recommended_posts.order_by('-date_published'), request)
+                        serializer = PostPreviewSerializer(context, many=True)
+                        return paginator.get_paginated_response(serializer.data)
+                    else:
+                        return Response({
+                            "detail": "Sorry. No recommendations available for you yet.",
+                        }, status=status.HTTP_204_NO_CONTENT)
+                except KeyError:
                     return Response({
                         "detail": "Sorry. No recommendations available for you yet.",
                     }, status=status.HTTP_204_NO_CONTENT)
-            except KeyError:
+            except Exception:
                 return Response({
                     "detail": "Sorry. No recommendations available for you yet.",
                 }, status=status.HTTP_204_NO_CONTENT)
