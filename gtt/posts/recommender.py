@@ -321,21 +321,21 @@ class CFRecommender:
         users_items_pivot_matrix = users_items_pivot_matrix_df.as_matrix()
         users_ids = list(users_items_pivot_matrix_df.index)
         all_user_predicted_ratings = users_items_pivot_matrix
-        if min(users_items_pivot_matrix.shape) > 2 and min(users_items_pivot_matrix.shape) < self.NUMBER_OF_FACTORS_MF:
-            U, sigma, Vt = svds(users_items_pivot_matrix, k=min(users_items_pivot_matrix.shape)-1)
-            u_sigma = np.dot(U, sigma)
-            rows = int(np.ceil(float(u_sigma.size)/Vt.shape[0]))
-            u_sig = u_sigma.copy()
-            u_sig.resize((rows, Vt.shape[0]))
-            all_user_predicted_ratings = np.dot(u_sig, Vt)
-        elif min(users_items_pivot_matrix.shape) > self.NUMBER_OF_FACTORS_MF:
-            U, sigma, Vt = svds(users_items_pivot_matrix, k=self.NUMBER_OF_FACTORS_MF)
-            u_sigma = np.dot(U, sigma)
-            columns = int(np.ceil(float(Vt.size)/max(u_sigma.shape)))
-            vt = Vt.copy()
-            vt.resize((max(u_sigma.shape), columns))
-            all_user_predicted_ratings = np.dot(u_sigma, vt)
-            all_user_predicted_ratings = np.dot(np.dot(U, sigma), vt)
+        #if min(users_items_pivot_matrix.shape) > 2 and min(users_items_pivot_matrix.shape) < self.NUMBER_OF_FACTORS_MF:
+        #    U, sigma, Vt = svds(users_items_pivot_matrix, k=min(users_items_pivot_matrix.shape)-1)
+        #    u_sigma = np.dot(U, sigma)
+        #    rows = int(np.ceil(float(u_sigma.size)/Vt.shape[0]))
+        #    u_sig = u_sigma.copy()
+        #    u_sig.resize((rows, Vt.shape[0]))
+        #    all_user_predicted_ratings = np.dot(u_sig, Vt)
+        #elif min(users_items_pivot_matrix.shape) > self.NUMBER_OF_FACTORS_MF:
+        #    U, sigma, Vt = svds(users_items_pivot_matrix, k=self.NUMBER_OF_FACTORS_MF)
+        #    u_sigma = np.dot(U, sigma)
+        #    columns = int(np.ceil(float(Vt.size)/max(u_sigma.shape)))
+        #    vt = Vt.copy()
+        #    vt.resize((max(u_sigma.shape), columns))
+        #    all_user_predicted_ratings = np.dot(u_sigma, vt)
+        #    all_user_predicted_ratings = np.dot(np.dot(U, sigma), vt)
         self.cf_predictions_df = pd.DataFrame(all_user_predicted_ratings, columns=users_items_pivot_matrix_df.columns, index=users_ids).transpose()
         self.items_df = self.dataset.get_dataframes()[0]
         
