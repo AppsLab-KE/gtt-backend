@@ -134,7 +134,7 @@ def get_google_access_token(code):
     data = {
         'client_id': client_id,
         'client_secret': client_secret,
-        'code': code,
+        'code': code.replace("%2F", "/"),
         'redirect_uri': 'https://geekstalkthursday.co.ke',
         'grant_type': 'authorization_code',
         }
