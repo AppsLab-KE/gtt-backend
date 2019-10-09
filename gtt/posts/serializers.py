@@ -73,6 +73,7 @@ class ReplySerializer(serializers.ModelSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     user_that_commented = UserSerializer(read_only=True)
+    replies = ReplySerializer(read_only=True)
     replies_count = serializers.SerializerMethodField()
     class Meta:
         model = Comment
@@ -81,8 +82,11 @@ class CommentSerializer(serializers.ModelSerializer):
             'user_that_commented',
             'comment',
             'date_commented',
+            'replies',
             'replies_count',
         )
+
+    def get_replies(self, obj):
 
     def get_replies_count(self, obj):
         return obj.replies.count()
