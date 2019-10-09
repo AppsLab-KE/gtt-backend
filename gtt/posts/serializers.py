@@ -73,7 +73,7 @@ class ReplySerializer(serializers.ModelSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     user_that_commented = UserSerializer(read_only=True)
-    replies = ReplySerializer(read_only=True)
+    replies = ReplySerializer(many=True)
     replies_count = serializers.SerializerMethodField()
     class Meta:
         model = Comment
