@@ -86,8 +86,6 @@ class CommentSerializer(serializers.ModelSerializer):
             'replies_count',
         )
 
-    def get_replies(self, obj):
-
     def get_replies_count(self, obj):
         return obj.replies.count()
 
