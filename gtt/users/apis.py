@@ -24,7 +24,7 @@ from notifications.signals import notify
 from posts.helpers import (
     is_writer, get_random_token, get_bitbucket_access_token, get_github_access_token, get_google_access_token, 
     get_gitlab_access_token, user_confirmation_token, send_email, prepare_message, get_password_querydict, 
-    get_token_querydict, get_revoke_token_querydict, get_app,
+    get_token_querydict, get_revoke_token_querydict, get_app, get_avatar_url
 )
 from .forms import AvatarForm, UserForm
 
@@ -41,31 +41,64 @@ def get_access_token():
             break
     return access_token
 
+
+def get_user_avatar(obj):
+    if 'https' in obj.profile.avatar.url:
+        return get_avatar_url('https://', obj.profile.avatar.url)
+    elif 'http' in obj.profile.avatar.url:
+        return get_avatar_url('http://', obj.profile.avatar.url)
+    else:
+        return settings.DOMAIN_URL + obj.profile.avatar.url
+
 class RequestWritership(APIView):
     def post(self, request):
         user = User.objects.get(username=request.user.username)
         superusers = User.objects.filter(is_superuser=True)
-        if superusers.exists():
-            notify.send(sender=user, recipient=superusers, verb='make_writer', description="{} wants to become a writer.".format(user.username))
+        if user.groups.filter(name='Writers').exists():
             return Response({
-                    'detail': 'Your request was sent.',
-                })
+                'detail': 'You already are a writer.',
+                }, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response({
+            if superusers.exists():
+                subject = "You've received a request"
+                recepient = [superuser.email for superuser in superusers]
+                message = prepare_message(
+                        template="request_writership.html",
+                        username=user.username,
+                        user_id=user.id,
+                        user_avatar= get_user_avatar(user),
+                        domain_url=settings.DOMAIN_URL)
+                success = send_email(subject, recepient, message)
+                if success:
+                    notify.send(sender=user, recipient=superusers, verb='make_writer', description="{} wants to become a writer.".format(user.username))
+                    return Response({
+                        'detail': 'Your request was sent.',
+                        })
+                else:
+                    return Response({
+                        'detail': 'Your request was not sent. Please try again.',
+                        }, status=status.HTTP_502_BAD_GATEWAY)
+            else:
+                return Response({
                     'detail': 'Not admins were found.',
-                }, status=status.HTTP_404_NOT_FOUND)
+                    }, status=status.HTTP_404_NOT_FOUND)
 
 class MakeWriter(APIView):
     def post(self, request, username):
         if request.user.is_superuser:
             try:
                 user = User.objects.get(username=username)
-                group, created = Group.objects.get_or_create(name='Writers')
-                assign_perm('posts.add_post', group)
-                user.groups.add(group)
-                return Response({
-                    'detail': 'That user was made a writer.',
-                })
+                if user.groups.filter(name='Writers').exists():
+                    return Response({
+                    'detail': 'The user already is a writer.',
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    group, created = Group.objects.get_or_create(name='Writers')
+                    assign_perm('posts.add_post', group)
+                    user.groups.add(group)
+                    return Response({
+                        'detail': 'That user was made a writer.',
+                    })
             except User.DoesNotExist:
                 return Response({
                     'detail': 'That user was not found.',
