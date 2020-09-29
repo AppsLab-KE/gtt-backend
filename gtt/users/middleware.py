@@ -15,7 +15,7 @@ class GetUserMiddleware(MiddlewareMixin):
     def process_response(self, request, response):
         if response.status_code == 200:
             relative_path = request.path
-            if relative_path in ['/api/v1/auth/bitbucket', '/api/v1/auth/github', '/api/v1/auth/gitlab', '/api/v1/auth/oauth2/token']:
+            if relative_path in ['/api/v1/auth/bitbucket', '/api/v1/auth/github', '/api/v1/auth/google', '/api/v1/auth/gitlab', '/api/v1/auth/oauth2/token']:
                 try:
                     access_token = AccessToken.objects.get(token=response.data['access_token'])
                     current_user = model_to_dict(access_token.user, fields=['first_name', 'last_name', 'username', 'email', 'bio'])

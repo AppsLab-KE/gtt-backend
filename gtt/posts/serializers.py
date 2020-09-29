@@ -73,6 +73,7 @@ class ReplySerializer(serializers.ModelSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     user_that_commented = UserSerializer(read_only=True)
+    replies = ReplySerializer(many=True)
     replies_count = serializers.SerializerMethodField()
     class Meta:
         model = Comment
@@ -81,6 +82,7 @@ class CommentSerializer(serializers.ModelSerializer):
             'user_that_commented',
             'comment',
             'date_commented',
+            'replies',
             'replies_count',
         )
 
@@ -168,17 +170,6 @@ class PostSerializer(serializers.ModelSerializer):
 
     def get_ratings_count(self, obj):
         return obj.ratings.filter(rating=True).count()
-
-class BookmarkSerializer(serializers.ModelSerializer):
-    bookmarked_post = PostSerializer(read_only=True)
-    
-    class Meta:
-        model = Bookmark
-        fields = (
-            'resource_key',
-            'bookmarked_post',
-            'date_bookmarked',
-        )
 
 class RecommenderPostSerializer(serializers.ModelSerializer):
     timestamp = serializers.SerializerMethodField()

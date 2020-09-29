@@ -20,7 +20,7 @@ from posts.serializers import (
 
 #Top-N accuracy metrics consts
 EVAL_RANDOM_SAMPLE_NON_INTERACTED_ITEMS = 100
-USER_INTERACTIONS_COUNT = 5
+USER_INTERACTIONS_COUNT = 2
 
 class Dataset:
     post_columns = ['timestamp', 'eventType', 'contentId', 'authorPersonId', 'title', 'text']
@@ -229,7 +229,7 @@ class Vectorizer:
     def __init__(self):
         self.dataset = Dataset()
         self.articles_df = self.dataset.get_dataframes()[0]
-        stopwords_list = stopwords.words('english') + stopwords.words('portuguese')
+        stopwords_list = stopwords.words('english')
         vectorizer = TfidfVectorizer(analyzer='word',
         ngram_range=(1, 2),
         min_df=0.003,
@@ -321,13 +321,22 @@ class CFRecommender:
         users_items_pivot_matrix = users_items_pivot_matrix_df.as_matrix()
         users_ids = list(users_items_pivot_matrix_df.index)
         all_user_predicted_ratings = users_items_pivot_matrix
-        if min(users_items_pivot_matrix.shape) > 1 and min(users_items_pivot_matrix.shape) < self.NUMBER_OF_FACTORS_MF:
-            U, sigma, Vt = svds(users_items_pivot_matrix, k=min(users_items_pivot_matrix.shape))
-            all_user_predicted_ratings = np.dot(np.dot(U, sigma), Vt)
-        elif min(users_items_pivot_matrix.shape) > 1 and min(users_items_pivot_matrix.shape) > self.NUMBER_OF_FACTORS_MF:
-            U, sigma, Vt = svds(users_items_pivot_matrix, k=self.NUMBER_OF_FACTORS_MF)
-            all_user_predicted_ratings = np.dot(np.dot(U, sigma), Vt)
-        self.cf_predictions_df = pd.DataFrame(all_user_predicted_ratings, columns = users_items_pivot_matrix_df.columns, index=users_ids).transpose()
+        #if min(users_items_pivot_matrix.shape) > 2 and min(users_items_pivot_matrix.shape) < self.NUMBER_OF_FACTORS_MF:
+        #    U, sigma, Vt = svds(users_items_pivot_matrix, k=min(users_items_pivot_matrix.shape)-1)
+        #    u_sigma = np.dot(U, sigma)
+        #    rows = int(np.ceil(float(u_sigma.size)/Vt.shape[0]))
+        #    u_sig = u_sigma.copy()
+        #    u_sig.resize((rows, Vt.shape[0]))
+        #    all_user_predicted_ratings = np.dot(u_sig, Vt)
+        #elif min(users_items_pivot_matrix.shape) > self.NUMBER_OF_FACTORS_MF:
+        #    U, sigma, Vt = svds(users_items_pivot_matrix, k=self.NUMBER_OF_FACTORS_MF)
+        #    u_sigma = np.dot(U, sigma)
+        #    columns = int(np.ceil(float(Vt.size)/max(u_sigma.shape)))
+        #    vt = Vt.copy()
+        #    vt.resize((max(u_sigma.shape), columns))
+        #    all_user_predicted_ratings = np.dot(u_sigma, vt)
+        #    all_user_predicted_ratings = np.dot(np.dot(U, sigma), vt)
+        self.cf_predictions_df = pd.DataFrame(all_user_predicted_ratings, columns=users_items_pivot_matrix_df.columns, index=users_ids).transpose()
         self.items_df = self.dataset.get_dataframes()[0]
         
     def get_model_name(self):
@@ -407,40 +416,41 @@ class PostRecommender:
 
     def setUp(self):
         try:
-            with open('popularity_model.pickle', 'rb') as p:
-                self.popularity_model = pickle.load(p)
-            with open('content_based_model.pickle', 'rb') as p:
-                self.content_based_recommender_model = pickle.load(p)
-            with open('cf_recommender_model.pickle', 'rb') as p:
-                self.cf_recommender_model = pickle.load(p)
-            with open('hybrid_recommender_model.pickle', 'rb') as p:
-                self.hybrid_recommender_model = pickle.load(p)
+            p1 = open('popularity_model.pickle', 'rb')
+            self.popularity_model = pickle.load(p1)
+            p2 = open('content_based_model.pickle', 'rb')
+            self.content_based_recommender_model = pickle.load(p2)
+            p3 = open('cf_recommender_model.pickle', 'rb')
+            self.cf_recommender_model = pickle.load(p3)
+            p4 = open('hybrid_recommender_model.pickle', 'rb')
+            self.hybrid_recommender_model = pickle.load(p4)
         except FileNotFoundError:
-            self.pickle_recommenders()
-
-
-    def pickle_recommenders(self):
-        self.popularity_model = PopularityRecommender()
-        self.content_based_recommender_model = ContentBasedRecommender()
-        self.cf_recommender_model = CFRecommender()
-        self.hybrid_recommender_model = HybridRecommender(self.content_based_recommender_model, self.cf_recommender_model)
-        
-        with open('popularity_model.pickle', 'wb') as p:
-            pickle.dump(self.popularity_model, p)
-        with open('content_based_model.pickle', 'wb') as p:
-            pickle.dump(self.content_based_recommender_model, p)
-        with open('cf_recommender_model.pickle', 'wb') as p:
-            pickle.dump(self.cf_recommender_model, p)
-        with open('hybrid_recommender_model.pickle', 'wb') as p:
-            pickle.dump(self.hybrid_recommender_model, p)
+            self.popularity_model = PopularityRecommender()
+            self.content_based_recommender_model = ContentBasedRecommender()
+            self.cf_recommender_model = CFRecommender()
+            self.hybrid_recommender_model = HybridRecommender(self.content_based_recommender_model, self.cf_recommender_model)
+            p1 = open('popularity_model.pickle', 'wb')
+            pickle.dump(self.popularity_model, p1)
+            p2 = open('content_based_model.pickle', 'wb')
+            pickle.dump(self.content_based_recommender_model, p2)
+            p3 = open('cf_recommender_model.pickle', 'wb')
+            pickle.dump(self.cf_recommender_model, p3)
+            p4 = open('hybrid_recommender_model.pickle', 'wb')
+            pickle.dump(self.hybrid_recommender_model, p4)
 
     def get_popular_posts(self, topn):
-        contentIds = self.popularity_model.recommend_items(topn=topn, verbose=True)["contentId"].tolist()
-        posts = Post.objects.filter(pk__in=contentIds)
-        return posts
+        try:
+            contentIds = self.popularity_model.recommend_items(topn=topn, verbose=True)["contentId"].tolist()
+            posts = Post.objects.filter(pk__in=contentIds)
+            return posts
+        except Exception:
+            return Post.objects.none()
 
     def get_recommended_posts(self, user_id, topn):
-        contentIds = self.hybrid_recommender_model.recommend_items(user_id, topn=topn, verbose=True)["contentId"].tolist()
-        posts = Post.objects.filter(pk__in=contentIds)
-        return posts
+        try:
+            contentIds = self.hybrid_recommender_model.recommend_items(user_id, topn=topn, verbose=True)["contentId"].tolist()
+            posts = Post.objects.filter(pk__in=contentIds)
+            return posts
+        except Exception:
+            return Post.objects.none()
 

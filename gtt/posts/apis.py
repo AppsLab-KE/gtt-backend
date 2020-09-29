@@ -14,7 +14,7 @@ from .forms import (
 )
 from .serializers import (
     CategorySerializer, TagSerializer, CommentSerializer, ReplySerializer,
-    PostPreviewSerializer, PostSerializer, BookmarkSerializer,
+    PostPreviewSerializer, PostSerializer,
 )
 from .models import (
     Category, Tag, Post, Comment, Reply, Rating, Bookmark,
@@ -145,48 +145,60 @@ class ViewPopularPosts(APIView):
     permission_classes = []
     def get(self, request):
         top_n = request.GET.get('top_n', 10)
+        paginator = LimitOffsetPaginationWithDefault()
+        popular_posts = Post.objects.none()
         if recommender.checksetUp():
-            recommender.setUp()
-            popular_posts = recommender.get_popular_posts(topn=int(top_n))
-            if popular_posts.exists():
-                paginator = LimitOffsetPaginationWithDefault()
+            try:
+                recommender.setUp()
+                popular_posts = recommender.get_popular_posts(topn=int(top_n))
+                if popular_posts.exists():
+                    context = paginator.paginate_queryset(popular_posts.order_by('-date_published'), request)
+                    serializer = PostPreviewSerializer(context, many=True)
+                    return paginator.get_paginated_response(serializer.data)
+                else:
+                    context = paginator.paginate_queryset(popular_posts.order_by('-date_published'), request)
+                    serializer = PostPreviewSerializer(context, many=True)
+                    return paginator.get_paginated_response(serializer.data)
+            except Exception:
                 context = paginator.paginate_queryset(popular_posts.order_by('-date_published'), request)
                 serializer = PostPreviewSerializer(context, many=True)
                 return paginator.get_paginated_response(serializer.data)
-            else:
-                return Response({
-                    "detail": "Sorry. No popular posts available for you yet.",
-                }, status=status.HTTP_204_NO_CONTENT)
         else:
-            return Response({
-                "detail": "Sorry. No popular posts available for you yet.",
-            }, status=status.HTTP_204_NO_CONTENT)
+            context = paginator.paginate_queryset(popular_posts.order_by('-date_published'), request)
+            serializer = PostPreviewSerializer(context, many=True)
+            return paginator.get_paginated_response(serializer.data)
 
 class ViewRecommendedPosts(APIView):
     def get(self, request):
         top_n = request.GET.get('top_n', 10)
         user = User.objects.get(username=request.user.username)
+        paginator = LimitOffsetPaginationWithDefault()
+        popular_posts = Post.objects.none()
         if recommender.checksetUp():
-            recommender.setUp()
             try:
-                recommended_posts = recommender.get_recommended_posts(user_id=user.id, topn=int(top_n))
-                if recommended_posts.exists():
-                    paginator = LimitOffsetPaginationWithDefault()
-                    context = paginator.paginate_queryset(recommended_posts.order_by('-date_published'), request)
+                recommender.setUp()
+                try:
+                    recommended_posts = recommender.get_recommended_posts(user_id=user.id, topn=int(top_n))
+                    if recommended_posts.exists():
+                        context = paginator.paginate_queryset(recommended_posts.order_by('-date_published'), request)
+                        serializer = PostPreviewSerializer(context, many=True)
+                        return paginator.get_paginated_response(serializer.data)
+                    else:
+                        context = paginator.paginate_queryset(popular_posts.order_by('-date_published'), request)
+                        serializer = PostPreviewSerializer(context, many=True)
+                        return paginator.get_paginated_response(serializer.data)
+                except KeyError:
+                    context = paginator.paginate_queryset(popular_posts.order_by('-date_published'), request)
                     serializer = PostPreviewSerializer(context, many=True)
                     return paginator.get_paginated_response(serializer.data)
-                else:
-                    return Response({
-                        "detail": "Sorry. No recommendations available for you yet.",
-                    }, status=status.HTTP_204_NO_CONTENT)
-            except KeyError:
-                return Response({
-                    "detail": "Sorry. No recommendations available for you yet.",
-                }, status=status.HTTP_204_NO_CONTENT)
+            except Exception:
+                context = paginator.paginate_queryset(popular_posts.order_by('-date_published'), request)
+                serializer = PostPreviewSerializer(context, many=True)
+                return paginator.get_paginated_response(serializer.data)
         else:
-            return Response({
-                "detail": "Sorry. No recommendations available for you yet.",
-            }, status=status.HTTP_204_NO_CONTENT)
+            context = paginator.paginate_queryset(popular_posts.order_by('-date_published'), request)
+            serializer = PostPreviewSerializer(context, many=True)
+            return paginator.get_paginated_response(serializer.data)
 
 class SearchPosts(generics.ListCreateAPIView):
     permission_classes = []
@@ -571,10 +583,10 @@ class DeleteReply(APIView):
 class ViewBookmarks(APIView):
     def get(self, request):
         user = User.objects.get(username=request.user.username)
-        bookmarks = Bookmark.objects.filter(user_that_bookmarked__pk=user.id).order_by('-date_bookmarked')
+        posts = Post.objects.filter(bookmarks__user_that_bookmarked__pk=user.id, bookmarks__archived=False).order_by('-bookmarks__date_bookmarked')
         paginator = LimitOffsetPaginationWithDefault()
-        context = paginator.paginate_queryset(bookmarks, request)
-        serializer = BookmarkSerializer(context, many=True)
+        context = paginator.paginate_queryset(posts, request)
+        serializer = PostPreviewSerializer(context, many=True)
         return paginator.get_paginated_response(serializer.data)
         
 
@@ -583,24 +595,29 @@ class CreateBookmark(APIView):
         user = User.objects.get(username=request.user.username)
         try:
             post = Post.objects.get(slug=slug)
-            bookmark = Bookmark.objects.create(user_that_bookmarked=user, bookmarked_post=post)
+            bookmark, ok = Bookmark.objects.get_or_create(user_that_bookmarked=user, bookmarked_post=post)
             assign_perm('posts.change_bookmark', user, bookmark)
             assign_perm('posts.delete_bookmark', user, bookmark)
-            serializer = BookmarkSerializer(instance=bookmark)
-            return Response({
-                "detail": "Your bookmark was created successfully.",
-                "bookmark": serializer.data,
-            })
+            serializer = PostPreviewSerializer(instance=post)
+            if ok:
+                return Response({
+                    "detail": "Your bookmark was created successfully.",
+                    "bookmark": serializer.data,
+                })
+            else:
+                return Response({
+                    "detail": "That bookmark already exists.",
+                }, status=status.HTTP_400_BAD_REQUEST)
         except Post.DoesNotExist:
             return Response({
                 "detail": "That post was not found.",
             }, status=status.HTTP_404_NOT_FOUND)
 
 class DeleteBookmark(APIView):
-    def post(self, request, resource_key):
+    def post(self, request, slug):
         user = User.objects.get(username=request.user.username)
         try:
-            bookmark = Bookmark.objects.get(resource_key=resource_key)
+            bookmark = Bookmark.objects.get(bookmarked_post__slug=slug, user_that_bookmarked__pk=user.id)
             if user.has_perm('posts.delete_bookmark', bookmark):
                 bookmark.delete()
                 return Response({

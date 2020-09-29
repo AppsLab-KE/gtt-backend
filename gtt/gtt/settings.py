@@ -109,12 +109,15 @@ CORS_ORIGIN_ALLOW_ALL = True
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 
-#SECRET_KEY = config('SECRET_KEY')
-#DEBUG = config('DEBUG', default=False, cast=bool)
 #DATABASES = {
-#    'default': dj_database_url.config(
-#        default=config('DATABASE_URL')
-#    )
+#    'default': {
+#        'ENGINE': os.getenv('DB_ENGINE'), 
+#        'NAME': os.getenv('DB_NAME'),
+#        'USER': os.getenv('DB_USER'),
+#        'PASSWORD': os.getenv('DB_PASSWORD'),
+#        'HOST': os.getenv('DB_HOST'),   # Or an IP Address that your DB is hosted on
+#        'PORT': os.getenv('DB_PORT'),
+#   }
 #}
 
 
@@ -146,6 +149,7 @@ OAUTH2_PROVIDER = {
 AUTHENTICATION_BACKENDS = (
     'social_core.backends.github.GithubOAuth2',
     'social_core.backends.bitbucket.BitbucketOAuth2',
+    'social_core.backends.google.GoogleOAuth2',
     'social_core.backends.gitlab.GitLabOAuth2',
     'rest_framework_social_oauth2.backends.DjangoOAuth2',
     'django.contrib.auth.backends.ModelBackend',
@@ -178,6 +182,9 @@ SOCIAL_AUTH_BITBUCKET_OAUTH2_SECRET = os.getenv('SOCIAL_AUTH_BITBUCKET_OAUTH2_SE
 # Gitlab configuration
 SOCIAL_AUTH_GITLAB_KEY = os.getenv('SOCIAL_AUTH_GITLAB_KEY')
 SOCIAL_AUTH_GITLAB_SECRET = os.getenv('SOCIAL_AUTH_GITLAB_SECRET')
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators

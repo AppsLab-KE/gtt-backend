@@ -22,9 +22,9 @@ from rest_framework_social_oauth2.oauth2_backends import KeepRequestCore
 from rest_framework_social_oauth2.oauth2_endpoints import SocialTokenServer
 from notifications.signals import notify
 from posts.helpers import (
-    is_writer, get_random_token, get_bitbucket_access_token, get_github_access_token, get_gitlab_access_token,
-    user_confirmation_token, send_email, prepare_message, get_password_querydict, get_token_querydict,
-    get_revoke_token_querydict, get_app,
+    is_writer, get_random_token, get_bitbucket_access_token, get_github_access_token, get_google_access_token, 
+    get_gitlab_access_token, user_confirmation_token, send_email, prepare_message, get_password_querydict, 
+    get_token_querydict, get_revoke_token_querydict, get_app, get_avatar_url
 )
 from .forms import AvatarForm, UserForm
 
@@ -41,31 +41,64 @@ def get_access_token():
             break
     return access_token
 
+
+def get_user_avatar(obj):
+    if 'https' in obj.profile.avatar.url:
+        return get_avatar_url('https://', obj.profile.avatar.url)
+    elif 'http' in obj.profile.avatar.url:
+        return get_avatar_url('http://', obj.profile.avatar.url)
+    else:
+        return settings.DOMAIN_URL + obj.profile.avatar.url
+
 class RequestWritership(APIView):
     def post(self, request):
         user = User.objects.get(username=request.user.username)
         superusers = User.objects.filter(is_superuser=True)
-        if superusers.exists():
-            notify.send(sender=user, recipient=superusers, verb='make_writer', description="{} wants to become a writer.".format(user.username))
+        if user.groups.filter(name='Writers').exists():
             return Response({
-                    'detail': 'Your request was sent.',
-                })
+                'detail': 'You already are a writer.',
+                }, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response({
+            if superusers.exists():
+                subject = "You've received a request"
+                recepient = [superuser.email for superuser in superusers]
+                message = prepare_message(
+                        template="request_writership.html",
+                        username=user.username,
+                        user_id=user.id,
+                        user_avatar= get_user_avatar(user),
+                        domain_url=settings.DOMAIN_URL)
+                success = send_email(subject, recepient, message)
+                if success:
+                    notify.send(sender=user, recipient=superusers, verb='make_writer', description="{} wants to become a writer.".format(user.username))
+                    return Response({
+                        'detail': 'Your request was sent.',
+                        })
+                else:
+                    return Response({
+                        'detail': 'Your request was not sent. Please try again.',
+                        }, status=status.HTTP_502_BAD_GATEWAY)
+            else:
+                return Response({
                     'detail': 'Not admins were found.',
-                }, status=status.HTTP_404_NOT_FOUND)
+                    }, status=status.HTTP_404_NOT_FOUND)
 
 class MakeWriter(APIView):
     def post(self, request, username):
         if request.user.is_superuser:
             try:
                 user = User.objects.get(username=username)
-                group, created = Group.objects.get_or_create(name='Writers')
-                assign_perm('posts.add_post', group)
-                user.groups.add(group)
-                return Response({
-                    'detail': 'That user was made a writer.',
-                })
+                if user.groups.filter(name='Writers').exists():
+                    return Response({
+                    'detail': 'The user already is a writer.',
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    group, created = Group.objects.get_or_create(name='Writers')
+                    assign_perm('posts.add_post', group)
+                    user.groups.add(group)
+                    return Response({
+                        'detail': 'That user was made a writer.',
+                    })
             except User.DoesNotExist:
                 return Response({
                     'detail': 'That user was not found.',
@@ -101,7 +134,7 @@ class BackendAccessToken(CsrfExemptMixin, OAuthLibMixin, APIView):
     def post(self, request, backend_name):
         if 'code' in request.data:
             code = request.data.get('code')
-            if backend_name in ['bitbucket', 'github', 'gitlab']:
+            if backend_name in ['bitbucket', 'github', 'google', 'gitlab']:
                 try:
                     if backend_name == 'bitbucket':
                         redirect_uri = request.data.get('redirectUri')
@@ -117,6 +150,17 @@ class BackendAccessToken(CsrfExemptMixin, OAuthLibMixin, APIView):
                         return response
                     elif backend_name == 'github':
                         access_response = get_github_access_token(code)
+                        mutable_data = access_response.copy()
+                        request._request.POST = access_response.copy()
+                        for key, value in mutable_data.items():
+                            request._request.POST[key] = value
+                        url, headers, body, resp_status = self.create_token_response(request._request)
+                        response = Response(data=json.loads(body), status=resp_status)
+                        for k, v in headers.items():
+                            response[k] = v
+                        return response
+                    elif backend_name == 'google':
+                        access_response = get_google_access_token(code)
                         mutable_data = access_response.copy()
                         request._request.POST = access_response.copy()
                         for key, value in mutable_data.items():
@@ -570,7 +614,7 @@ class UserProfile(APIView):
         try:
             user = User.objects.get(username=username)
             profile_user = model_to_dict(user, fields=['first_name', 'last_name', 'username', 'email', 'bio'])
-            profile_user.update({'is_writer': is_writer(user), 'user_avatar': settings.DOMAIN_URL + user.profile.avatar.url})
+            profile_user.update({'is_writer': is_writer(user), 'user_avatar': get_user_avatar(user)})
             return Response({"user": profile_user})
         except User.DoesNotExist:
             return Response({
@@ -586,7 +630,7 @@ class UpdateProfile(APIView):
                 form_user = form.save()
                 form_user.save()
                 updated_user = model_to_dict(form_user, fields=['first_name', 'last_name', 'username', 'email', 'bio'])
-                updated_user.update({'is_writer': is_writer(form_user), 'user_avatar': settings.DOMAIN_URL + form_user.profile.avatar.url})
+                updated_user.update({'is_writer': is_writer(form_user), 'user_avatar': get_user_avatar(user)})
                 return Response({
                     "detail": "The user profile was updated.",
                     "user": updated_user,
@@ -610,7 +654,7 @@ class UpdateAvatar(APIView):
             if profile_form.is_valid():
                 profile = profile_form.save()
                 updated_user = model_to_dict(user, fields=['first_name', 'last_name', 'username', 'email', 'bio'])
-                updated_user.update({'is_writer': is_writer(user), 'user_avatar': settings.DOMAIN_URL + profile.avatar.url})
+                updated_user.update({'is_writer': is_writer(user), 'user_avatar': get_user_avatar(user)})
                 return Response({
                     "detail": "The avatar was updated.",
                     "user": updated_user,

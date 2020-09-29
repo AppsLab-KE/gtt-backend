@@ -13,6 +13,8 @@ def save_avatar(strategy, details, user=None, *args, **kwargs):
                 social_thumb = response['avatar_url']
             elif 'bitbucket' in backend_name and response.get('links', {}).get('avatar', {}).get('href'):
                 social_thumb = response['links']['avatar']['href']
+            elif 'google' in backend_name and response.get('picture'):
+                social_thumb = response['picture']
             else:
                 social_thumb = 'http://www.gravatar.com/avatar/'
                 social_thumb += hashlib.md5(user.email.lower().encode('utf8')).hexdigest()

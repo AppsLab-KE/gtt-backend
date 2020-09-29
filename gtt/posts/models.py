@@ -209,22 +209,12 @@ class Rating(models.Model):
 class Bookmark(models.Model):
     bookmarked_post = models.ForeignKey("Post", related_name='bookmarks', null=True, on_delete=models.SET_NULL)
     user_that_bookmarked = models.ForeignKey(User, related_name='bookmarks', null=True, on_delete=models.SET_NULL)
-    resource_key = models.CharField(max_length=50, unique=True)
     archived = models.BooleanField(default=False)
     date_bookmarked = models.DateTimeField(auto_now_add=True)
     objects = ArchivedManager()
 
-    def get_absolute_url(self):
-        from django.urls import reverse
-        return reverse('view_bookmark', kwargs={'resource_key': self.resource_key})
-
     def __str__(self):
         return self.bookmarked_post.post_heading
-
-    def save(self, *args, **kwargs):
-        if not self.pk:
-            self.resource_key = get_resource_key(Bookmark)
-        super(Bookmark, self).save(*args, **kwargs)
 
     def delete(self):
         self.archived = True
