@@ -111,12 +111,12 @@ CORS_ORIGIN_ALLOW_ALL = True
 
 #DATABASES = {
 #    'default': {
-#        'ENGINE': os.getenv('DB_ENGINE'), 
-#        'NAME': os.getenv('DB_NAME'),
-#        'USER': os.getenv('DB_USER'),
-#        'PASSWORD': os.getenv('DB_PASSWORD'),
-#        'HOST': os.getenv('DB_HOST'),   # Or an IP Address that your DB is hosted on
-#        'PORT': os.getenv('DB_PORT'),
+#        'ENGINE': os.getenv('DATABASE_ENGINE'), 
+#        'NAME': os.getenv('DATABASE_NAME'),
+#        'USER': os.getenv('DATABASE_USER'),
+#        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
+#        'HOST': os.getenv('DATABASE_HOST'),   # Or an IP Address that your DB is hosted on
+#        'PORT': os.getenv('DATABASE_PORT'),
 #   }
 #}
 
