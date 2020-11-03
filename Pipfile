@@ -54,6 +54,8 @@ typed-ast = "*"
 urllib3 = "*"
 whitenoise = "*"
 wrapt = "*"
+cloudinary = "*"
+dj3-cloudinary-storage = "*"
 
 [requires]
 python_version = "3.8"

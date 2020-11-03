@@ -1,9 +1,15 @@
 from django import forms
+from cloudinary.forms import CloudinaryFileField
 from .models import (
     Category, Post, Rating, Comment, Reply, Bookmark,
 )
 
 class PostForm(forms.ModelForm):
+    post_heading_image = CloudinaryFileField(
+        options = {
+            'folder': 'post_photos'
+       }
+    )
     class Meta:
         model = Post
         fields = (

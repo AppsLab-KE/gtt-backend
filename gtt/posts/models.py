@@ -1,6 +1,7 @@
 import os
 import random
 from django.db import models
+from cloudinary.models import CloudinaryField
 from django.contrib.auth import get_user_model
 from posts.helpers import (
     get_tag_slug, get_category_slug, get_slug_key, get_resource_key,
@@ -88,7 +89,7 @@ class Category(models.Model):
 
 class Post(models.Model):
     post_heading = models.CharField(max_length=100)
-    post_heading_image = models.ImageField(upload_to=unique_photo_path, null=True, blank=True)
+    post_heading_image = CloudinaryField('post_heading_image')
     post_body = models.TextField()
     post_author = models.ForeignKey(User, related_name='posts', null=True, on_delete=models.SET_NULL)
     slug = models.SlugField(max_length=250)

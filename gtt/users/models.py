@@ -8,6 +8,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.contrib.auth.models import AbstractUser
+from cloudinary.models import CloudinaryField
 from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
 
@@ -54,7 +55,7 @@ class User(AbstractUser):
 
 class Profile(models.Model):
     user = models.OneToOneField("User", on_delete=models.CASCADE)
-    avatar = models.ImageField(upload_to=unique_photo_path, default='profile_avatars/default_avatar.png', max_length=500)
+    avatar = CloudinaryField('avatar')
 
     def get_absolute_url(self):
         from django.urls import reverse

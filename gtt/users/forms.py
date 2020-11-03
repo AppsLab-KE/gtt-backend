@@ -1,10 +1,20 @@
 from django import forms
+from cloudinary.forms import CloudinaryFileField
 from django.contrib.auth import get_user_model
 from .models import Profile
 
 User = get_user_model()
 
 class AvatarForm(forms.ModelForm):
+    avatar = CloudinaryFileField(
+        options = {
+            'crop': 'thumb',
+            'width': 200,
+            'height': 200,
+            'folder': 'profile_avatars'
+       }
+    )
+ 
     class Meta:
         model = Profile
         fields = (
