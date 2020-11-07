@@ -53,12 +53,16 @@ class UserSerializer(serializers.ModelSerializer):
         return is_writer(obj)
 
     def get_user_avatar(self, obj):
-        if 'https' in obj.profile.avatar.url:
-            return get_avatar_url('https://', obj.profile.avatar.url)
-        elif 'http' in obj.profile.avatar.url:
-            return get_avatar_url('http://', obj.profile.avatar.url)
+        if obj.profile.avatar:
+            if 'https' in obj.profile.avatar.url:
+                return get_avatar_url('https://', obj.profile.avatar.url)
+            elif 'http' in obj.profile.avatar.url:
+                return get_avatar_url('http://', obj.profile.avatar.url)
+            else:
+                return settings.DOMAIN_URL + obj.profile.avatar.url
         else:
-            return settings.DOMAIN_URL + obj.profile.avatar.url
+            from posts.helpers import default_photo
+            return default_photo(obj.email)
 
 class ReplySerializer(serializers.ModelSerializer):
     user_that_replied = UserSerializer(read_only=True)

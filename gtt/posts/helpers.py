@@ -1,6 +1,7 @@
 import os
 import random
 import re
+import shlex
 import requests
 import string
 import secrets
@@ -16,6 +17,7 @@ from django.http.request import QueryDict
 from django.utils.text import slugify
 
 User = get_user_model()
+START = '#'
 
 def get_first_user():
     users = User.objects.all()
@@ -34,6 +36,56 @@ def get_app():
             authorization_grant_type = Application.GRANT_PASSWORD,
         )
         return gtt_app
+
+def get_color_from_letter(word):
+    l = word[0].lower()
+    if l in ['a', 'n', '1']:
+        return '#468990'
+    elif l in ['b', 'o', '2']:
+        return '#FADB56'
+    elif l in ['c', 'p', '3']:
+        return '#E14C38'
+    elif l in ['d', 'q', '4']:
+        return '#3399ff'
+    elif l in ['e', 'r', '5']:
+        return '#99cc00'
+    elif l in ['f', 's', '6']:
+        return '#6600ff'
+    elif l in ['g', 't', '7']:
+        return '#996600'
+    elif l in ['h', 'u', '8']:
+        return '#666699'
+    elif l in ['i', 'v', '9']:
+        return '#999966'
+    elif l in ['j', 'w', '0']:
+        return '#ccffff'
+    elif l in ['k', 'x']:
+        return '#cc0000'
+    elif l in ['l', 'y']:
+        return '#00ccff'
+    else:
+        return '#e6e6e6'
+
+def start_colour(name):
+    #random_colour = random.randint(0, 0xffffff) # inclusive range
+    #return f'{START}{random_colour:06X}'
+    return get_color_from_letter(name)
+
+def contrast_colour(colour):
+    rgb = int(colour.lstrip(START), 16)
+    complementary_colour = 0xffffff-rgb
+    return [
+        colour.lstrip(START),
+        f'{complementary_colour:06X}'
+    ]
+
+def default_photo(name):
+    name_list = shlex.split(name)
+    concatenated_name = str()
+    for n in name_list:
+        concatenated_name += "{}+".format(n)
+    cn = concatenated_name.strip('+')
+    return "https://ui-avatars.com/api/?name={}&background={}&color={}&size=180".format(cn, *contrast_colour(start_colour(name)))
 
 def is_writer(user):
         if user.has_perm('posts.add_post'):
@@ -138,7 +190,7 @@ def get_google_access_token(code):
         'client_id': client_id,
         'client_secret': client_secret,
         'code': code.replace("%2F", "/"),
-        'redirect_uri': gtt_app.redirect_uris,
+        'redirect_uri': "{}/oauth/complete/google/".format(gtt_app.redirect_uris),
         'grant_type': 'authorization_code',
         }
     headers = {'Accept': 'application/json'}
