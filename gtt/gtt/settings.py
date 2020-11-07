@@ -273,4 +273,6 @@ API = API_ROOT + "/" + API_VERSION + "/"
 
 DOMAIN_URL = 'http://localhost:8000'
 
+FRONTEND_DOMAIN_URL = 'http://localhost:8000'
+
 #STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

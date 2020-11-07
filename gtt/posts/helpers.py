@@ -28,7 +28,7 @@ def get_app():
     except Application.DoesNotExist:
         gtt_app = Application.objects.create(
             name = 'Geeks Talk Thursday',
-            redirect_uris = settings.DOMAIN_URL,
+            redirect_uris = settings.FRONTEND_DOMAIN_URL,
             user = get_first_user(),
             client_type = Application.CLIENT_CONFIDENTIAL,
             authorization_grant_type = Application.GRANT_PASSWORD,
@@ -138,7 +138,7 @@ def get_google_access_token(code):
         'client_id': client_id,
         'client_secret': client_secret,
         'code': code.replace("%2F", "/"),
-        'redirect_uri': 'https://geekstalkthursday.co.ke',
+        'redirect_uri': gtt_app.redirect_uris,
         'grant_type': 'authorization_code',
         }
     headers = {'Accept': 'application/json'}
