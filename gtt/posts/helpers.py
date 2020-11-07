@@ -89,9 +89,12 @@ def get_slug_key(instance, model, slug=None):
     
 
 def get_avatar_url(scheme, quoted_url):
-    m = re.match(r'^\/media\/https?%3A\/(.*)', quoted_url)
-    matched_url = m.groups()[0]
-    return scheme + urllib.parse.unquote(matched_url)
+    try:
+        m = re.match(r'^\/media\/https?%3A\/(.*)', quoted_url)
+        matched_url = m.groups()[0]
+        return scheme + urllib.parse.unquote(matched_url)
+    except:
+        return "https://api.adorable.io/avatars/285/default-avatar@mail.png"
 
 def get_bitbucket_access_token(code, redirect_uri):
     gtt_app = get_app()

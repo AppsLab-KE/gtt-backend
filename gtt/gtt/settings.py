@@ -141,6 +141,12 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'posts.paginator.LimitOffsetPaginationWithDefault',
 }
 
+OAUTH2_PROVIDER_ACCESS_TOKEN_MODEL = 'oauth2_provider.AccessToken'
+
+OAUTH2_PROVIDER_APPLICATION_MODEL = 'oauth2_provider.Application'
+
+OAUTH2_PROVIDER_REFRESH_TOKEN_MODEL = 'oauth2_provider.RefreshToken'
+
 OAUTH2_PROVIDER = {
     'ACCESS_TOKEN_EXPIRE_SECONDS': 60 * 60 * 24 * 365 * 10,
     'OAUTH_SINGLE_ACCESS_TOKEN': True,

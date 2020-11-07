@@ -115,7 +115,7 @@ class PostPreviewSerializer(serializers.ModelSerializer):
         )
 
     def get_post_heading_image(self, obj):
-        return settings.DOMAIN_URL + obj.post_heading_image.url
+        return obj.post_heading_image.url
 
     def get_post_body_preview(self, obj):
         return "<p>" + remove_html_tags(obj.post_body[:300]) + "...</p>"
@@ -157,7 +157,7 @@ class PostSerializer(serializers.ModelSerializer):
         )
 
     def get_post_heading_image(self, obj):
-        return settings.DOMAIN_URL + obj.post_heading_image.url
+        return obj.post_heading_image.url
 
     def get_category_name(self, obj):
         return obj.category.category_name
